@@ -8,7 +8,8 @@ Main ASK Sample view.
 import SwiftUI
 
 struct ContentView: View {
-    @State var aquarium = DiceSessionManager()
+    
+    @EnvironmentObject var aquarium: DiceSessionManager
 
     var body: some View {
         NavigationStack {

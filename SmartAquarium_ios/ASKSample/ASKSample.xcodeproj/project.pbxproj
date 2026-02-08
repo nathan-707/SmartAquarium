@@ -11,15 +11,12 @@
 		475177322BE04ADE00D73F7D /* DiceColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 475177312BE04ADE00D73F7D /* DiceColor.swift */; };
 		475177332BE04ADE00D73F7D /* DiceColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 475177312BE04ADE00D73F7D /* DiceColor.swift */; };
 		4751774E2BE08B0D00D73F7D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4751774D2BE08B0D00D73F7D /* ContentView.swift */; };
-		475177502BE08BF000D73F7D /* SampleAccessoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4751774F2BE08BF000D73F7D /* SampleAccessoryView.swift */; };
 		479D045E2BBE168A005BAE19 /* ASKSampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 479D045D2BBE168A005BAE19 /* ASKSampleApp.swift */; };
 		479D04622BBE168C005BAE19 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 479D04612BBE168C005BAE19 /* Assets.xcassets */; };
-		479D04972BBE254E005BAE19 /* ASKSampleAccessoryApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 479D04962BBE254E005BAE19 /* ASKSampleAccessoryApp.swift */; };
 		47DC724F2BE9C9E500946AEE /* DiceValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47DC724E2BE9C9E500946AEE /* DiceValue.swift */; };
 		47DC72502BE9C9E500946AEE /* DiceValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47DC724E2BE9C9E500946AEE /* DiceValue.swift */; };
 		47E7F71C2BC7368E00891891 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 479D04612BBE168C005BAE19 /* Assets.xcassets */; };
 		82D0012E2F393008004450A4 /* AquariumUpdateCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D0012D2F393008004450A4 /* AquariumUpdateCommand.swift */; };
-		CFEA64C72BDB2C6D00FA8571 /* DiceAccessory.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFEA64C52BDB2C6D00FA8571 /* DiceAccessory.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,18 +25,15 @@
 		475177312BE04ADE00D73F7D /* DiceColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiceColor.swift; sourceTree = "<group>"; };
 		475177342BE051EC00D73F7D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		4751774D2BE08B0D00D73F7D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		4751774F2BE08BF000D73F7D /* SampleAccessoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleAccessoryView.swift; sourceTree = "<group>"; };
 		479D045A2BBE168A005BAE19 /* ASKSample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ASKSample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		479D045D2BBE168A005BAE19 /* ASKSampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ASKSampleApp.swift; sourceTree = "<group>"; };
 		479D04612BBE168C005BAE19 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		479D04942BBE254E005BAE19 /* ASKSampleAccessory.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ASKSampleAccessory.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		479D04962BBE254E005BAE19 /* ASKSampleAccessoryApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ASKSampleAccessoryApp.swift; sourceTree = "<group>"; };
 		47DC724E2BE9C9E500946AEE /* DiceValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiceValue.swift; sourceTree = "<group>"; };
 		82D0012C2F3880C7004450A4 /* TODO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TODO.swift; sourceTree = "<group>"; };
 		82D0012D2F393008004450A4 /* AquariumUpdateCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AquariumUpdateCommand.swift; sourceTree = "<group>"; };
 		A30FC6C8CA8EB4280921F77F /* SampleCode.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = SampleCode.xcconfig; path = ../Configuration/SampleCode.xcconfig; sourceTree = "<group>"; };
 		B6A3E350A5DF840AF56CD329 /* LICENSE.txt */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; path = LICENSE.txt; sourceTree = "<group>"; };
-		CFEA64C52BDB2C6D00FA8571 /* DiceAccessory.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DiceAccessory.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -75,7 +69,6 @@
 				3B497D5C28806A67C71DA29E /* README.md */,
 				CFEA64BB2BDB27AA00FA8571 /* Shared */,
 				479D045C2BBE168A005BAE19 /* ASKSample */,
-				479D04952BBE254E005BAE19 /* ASKSampleAccessory */,
 				479D045B2BBE168A005BAE19 /* Products */,
 				479D04F42BBE33DB005BAE19 /* Frameworks */,
 				416459335B3566378581E6F4 /* Configuration */,
@@ -102,16 +95,6 @@
 				475177342BE051EC00D73F7D /* Info.plist */,
 			);
 			path = ASKSample;
-			sourceTree = "<group>";
-		};
-		479D04952BBE254E005BAE19 /* ASKSampleAccessory */ = {
-			isa = PBXGroup;
-			children = (
-				479D04962BBE254E005BAE19 /* ASKSampleAccessoryApp.swift */,
-				CFEA64C52BDB2C6D00FA8571 /* DiceAccessory.swift */,
-				4751774F2BE08BF000D73F7D /* SampleAccessoryView.swift */,
-			);
-			path = ASKSampleAccessory;
 			sourceTree = "<group>";
 		};
 		479D04F42BBE33DB005BAE19 /* Frameworks */ = {
@@ -252,9 +235,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CFEA64C72BDB2C6D00FA8571 /* DiceAccessory.swift in Sources */,
-				475177502BE08BF000D73F7D /* SampleAccessoryView.swift in Sources */,
-				479D04972BBE254E005BAE19 /* ASKSampleAccessoryApp.swift in Sources */,
 				47DC72502BE9C9E500946AEE /* DiceValue.swift in Sources */,
 				475177332BE04ADE00D73F7D /* DiceColor.swift in Sources */,
 			);

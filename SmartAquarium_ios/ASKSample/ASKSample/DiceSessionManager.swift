@@ -26,20 +26,12 @@ class DiceSessionManager: NSObject, ObservableObject {
     @Published var daysSinceFed: Int = 0
     
     
+
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    var diceColor: DiceColor?
-    var diceValue = DiceValue.one
-    var peripheralConnected = false
-    var pickerDismissed = true
+    @Published var diceColor: DiceColor?
+    @Published var diceValue = DiceValue.one
+    @Published var peripheralConnected = false
+    @Published var pickerDismissed = true
 
     private var currentDice: ASAccessory?
     private var session = ASAccessorySession()
@@ -120,9 +112,8 @@ class DiceSessionManager: NSObject, ObservableObject {
             manager = CBCentralManager(delegate: self, queue: nil)
         }
 
-        if dice.displayName == DiceColor.blue.displayName {
             diceColor = .blue
-        }
+        
     }
 
     private func handleSessionEvent(event: ASAccessoryEvent) {
@@ -133,6 +124,8 @@ class DiceSessionManager: NSObject, ObservableObject {
         case .activated:
             guard let dice = session.accessories.first else { return }
             saveDice(dice: dice)
+            connect()
+
         case .accessoryRemoved:
             self.diceColor = nil
             self.currentDice = nil
