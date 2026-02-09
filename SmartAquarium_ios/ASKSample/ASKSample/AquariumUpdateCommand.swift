@@ -8,16 +8,29 @@
 
 import Foundation
 
-enum AquariumUpdateCommand {
-    case rgb, bubbler, display
-    
-    var commandToSerialize: String {
-        switch self {
-        case .rgb: return "rgb"
-        case .bubbler: return "bubbler"
-        case .display: return "display"
-        }
-    }
-    
-    
+func updateRGBCommand(r: Int, b: Int, g: Int) -> String {
+    return "command: rgb, value1: \(r), value2: \(g), value3: \(b)"
 }
+
+
+
+
+func encodeTOJSON(any: Codable) -> Data {
+    do {
+        let encoder = JSONEncoder()
+        let jsonData = try encoder.encode(any)
+
+        if let jsonString = String(data: jsonData, encoding: .utf8) {
+            print("Writing with response: \(jsonString)")
+        } else {
+            print("Writing with response: command updated")
+        }
+        return jsonData
+    } catch {
+        print("Failed to encode command: \(error)")
+    }
+    return Data()
+}
+
+
+

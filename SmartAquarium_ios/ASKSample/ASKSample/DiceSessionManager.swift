@@ -13,11 +13,13 @@ import SwiftUI
 class DiceSessionManager: NSObject, ObservableObject {
     
 // mark: settings
+    
+    @Published var settings = ""
     @Published var bubbler_isOn: Bool = false
     @Published var heater_isOn: Bool = false
     @Published var display_isOn: Bool = false
     @Published var r_LED: Int = 0
-    @Published var g_LED: Int = 255
+    @Published var g_LED: Int = 0
     @Published var b_LED: Int = 0
 
     // mark: readings
@@ -38,8 +40,10 @@ class DiceSessionManager: NSObject, ObservableObject {
     private var manager: CBCentralManager?
     private var peripheral: CBPeripheral?
     private var rollResultCharacteristic: CBCharacteristic?
+    private var iosCommandCharacteristic: CBCharacteristic?
 
     private static let diceRollCharacteristicUUID = "0xFF3F"
+    private static let CHARACTERISTIC_UUID_IOS = "0xBB3B"
 
 
 
@@ -143,10 +147,44 @@ class DiceSessionManager: NSObject, ObservableObject {
         print("pinging aquarium")
     }
     
-    func updateAquariumSetting(update: AquariumUpdateCommand){
-        
+    private struct IOSCommandPayload: Codable {
+        let command: String
     }
     
+    private var red = 10
+    private var green = 20
+    private var blue = 30
+
+
+    func updateAquariumSetting(update: String){
+        print("Sending command: \(update)")
+        if let peripheral = peripheral, let iosCommandCharacteristic = iosCommandCharacteristic {
+            red += 10
+            green += 10
+            blue += 10
+            
+            
+            struct Command: Codable {
+                var command: String
+                var value: String
+                var value2: String
+                var value3: String
+            }
+            let toESP = Command(
+                command: "RGB",
+                value: String(red),
+                value2: String(green),
+                value3: String(blue)
+            )
+            peripheral.writeValue(
+                encodeTOJSON(any: toESP),
+                for: iosCommandCharacteristic,
+                type: .withResponse
+            )
+            
+            
+        }
+    }
 }
 
 
@@ -193,7 +231,7 @@ extension DiceSessionManager: CBPeripheralDelegate {
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: (any Error)?) {
         
         print("service found!")
-    
+        
         guard
             error == nil,
             let services = peripheral.services
@@ -205,7 +243,7 @@ extension DiceSessionManager: CBPeripheralDelegate {
             peripheral.discoverCharacteristics(nil, for: service)
         }
     }
-
+    
     func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: (any Error)?) {
         // 1. Check for errors
         if let error = error {
@@ -214,7 +252,7 @@ extension DiceSessionManager: CBPeripheralDelegate {
         }
         
         guard let characteristics = service.characteristics else { return }
-
+        
         // 2. Loop through EVERYTHING found (Don't filter yet!)
         for characteristic in characteristics {
             print("Found Characteristic: \(characteristic.uuid.uuidString)") // DEBUG PRINT
@@ -222,7 +260,7 @@ extension DiceSessionManager: CBPeripheralDelegate {
             // 3. Check for match (Compare strings to be safe)
             // This handles "FF3F" vs "0xFF3F" vs "ff3f" automatically
             if characteristic.uuid.uuidString.caseInsensitiveCompare("FF3F") == .orderedSame ||
-               characteristic.uuid.uuidString == "0xFF3F" {
+                characteristic.uuid.uuidString == "0xFF3F" {
                 
                 print("MATCH FOUND! Subscribing to notifications...")
                 
@@ -233,26 +271,65 @@ extension DiceSessionManager: CBPeripheralDelegate {
                 
                 // 5. Read the initial value
                 peripheral.readValue(for: characteristic)
+            } else if characteristic.uuid.uuidString.caseInsensitiveCompare("BB3B") == .orderedSame ||
+                            characteristic.uuid.uuidString == "0xBB3B" {
+                print("ios characteristic found!")
+                iosCommandCharacteristic = characteristic
             }
         }
     }
+    
+    
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: (any Error)?) {
+        // 1. Basic Safety Check
+        guard error == nil, let data = characteristic.value else { return }
         
-        guard
-            error == nil,
-            characteristic.uuid == CBUUID(string: Self.diceRollCharacteristicUUID),
-            let data = characteristic.value,
-            let diceValue = String(data: data, encoding: .utf8)
-        else {
-            return
-        }
-
-        print("New dice value received: \(diceValue)")
-
-        DispatchQueue.main.async {
-            withAnimation {
-                self.diceValue = DiceValue(rawValue: diceValue) ?? .one
-            }
+        // 2. Route based on which characteristic sent data
+        switch characteristic.uuid {
+            
+        case CBUUID(string: Self.diceRollCharacteristicUUID):
+            handleSettingsUpdate(from: data)
+            
+        case CBUUID(string: Self.CHARACTERISTIC_UUID_IOS):
+            print("IOS")
+            break
+            
+        default:
+            print("Received update for unknown characteristic: \(characteristic.uuid)")
         }
     }
+    
+    private func handleSettingsUpdate(from data: Data) {
+        let decoder = JSONDecoder()
+        
+        do {
+            // This replaces your 'settings = String(diceValue)' line
+            let decodedSettings = try decoder.decode(ESPSettings.self, from: data)
+            
+            // Now you have actual variables!
+            print("Bubbler is now: \(decodedSettings.bubbler)")
+            print("Color is: R\(decodedSettings.r) G\(decodedSettings.g) B\(decodedSettings.b)")
+            
+            // Update your UI or State here
+            r_LED = decodedSettings.r
+            g_LED = decodedSettings.g
+            b_LED = decodedSettings.b
+            
+            display_isOn = decodedSettings.display
+            bubbler_isOn = decodedSettings.bubbler
+            
+        } catch {
+            print("Failed to decode JSON: \(error)")
+        }
+    }
+    
 }
+
+struct ESPSettings: Codable {
+    let bubbler: Bool
+    let display: Bool
+    let r: Int
+    let g: Int
+    let b: Int
+}
+

@@ -4,10 +4,9 @@
 // Constructor & Setup
 // -------------------------------------------------------------------------
 
-SmartAquarium::SmartAquarium(int pumpPin, int lightPin, int heaterPin) {
+SmartAquarium::SmartAquarium(int pumpPin, int lightPin) {
   _pumpPin = pumpPin;
   _lightPin = lightPin;
-  _heaterPin = heaterPin;
 
   // Set Defaults
   settings.bubbler_isOn = false;
@@ -24,7 +23,6 @@ SmartAquarium::SmartAquarium(int pumpPin, int lightPin, int heaterPin) {
 void SmartAquarium::begin() {
   pinMode(_pumpPin, OUTPUT);
   pinMode(_lightPin, OUTPUT);
-  pinMode(_heaterPin, OUTPUT);
   
   // Apply initial state
   applyHardwareState();

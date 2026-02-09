@@ -8,7 +8,7 @@
 
 /*
  - remove the variation of die
- - make it where settings and reading get synced across esp32 and app
+ - make it where settings and reading get synced across esp32 and app on connecction.
  - make settings view, and send commands to change settings to esp32 when changed.
  - make main menu screen. have the current light as gradient backgroud, and show current readings of tank.
  

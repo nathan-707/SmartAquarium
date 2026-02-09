@@ -7,8 +7,8 @@
 
 struct Settings {
   bool bubbler_isOn;
-  bool heater_isOn;
   bool display_isOn;
+
 
   int r_LED;
   int g_LED;
@@ -17,7 +17,6 @@ struct Settings {
   String serialize() {
     StaticJsonDocument<200> doc; 
     doc["bubbler"] = bubbler_isOn;
-    doc["heater"] = heater_isOn;
     doc["display"] = display_isOn;
     doc["r"] = r_LED;
     doc["g"] = g_LED;
@@ -53,7 +52,7 @@ struct Readings {
 class SmartAquarium {
   public:
     // Constructor
-    SmartAquarium(int pumpPin, int lightPin, int heaterPin);
+    SmartAquarium(int pumpPin, int lightPin);
 
     // Core Methods
     void begin();
@@ -71,7 +70,6 @@ class SmartAquarium {
     // Hardware Pins
     int _pumpPin;
     int _lightPin;
-    int _heaterPin;
 
     // Internal Logic
     void readSensors();

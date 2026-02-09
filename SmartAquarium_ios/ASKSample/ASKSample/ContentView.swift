@@ -10,6 +10,7 @@ import SwiftUI
 struct ContentView: View {
     
     @EnvironmentObject var aquarium: DiceSessionManager
+    @State var bubblerToggle: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -65,11 +66,13 @@ struct ContentView: View {
     @ViewBuilder
     private func makeRollView(diceColor: DiceColor) -> some View {
         VStack {
-            Text(aquarium.diceValue.rawValue)
-                .font(.system(size: 350).monospaced().bold())
-                .foregroundStyle(diceColor.color)
-                .contentTransition(.numericText())
-                .frame(maxHeight: .infinity)
+
+            Text(aquarium.settings)
+            
+            Text("Display: " + (aquarium.display_isOn ? "ON" : "OFF"))
+            Text("Red: " + String(aquarium.r_LED))
+            Text("Green: " + String(aquarium.g_LED))
+            Text("Blue: " + String(aquarium.b_LED))
 
             Image(diceColor.diceName)
                 .resizable()
@@ -90,6 +93,13 @@ struct ContentView: View {
             .foregroundStyle(.white)
             .padding(.horizontal, 64)
             .padding(.bottom, 6)
+            
+            
+            Button {
+                aquarium.updateAquariumSetting(update: updateRGBCommand(r: 7, b: 7, g: 7))
+            } label: {
+                Text("Send command")
+            }.padding()
 
             Button {
                 Task {
