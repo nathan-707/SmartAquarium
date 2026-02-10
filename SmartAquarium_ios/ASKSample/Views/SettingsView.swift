@@ -20,6 +20,56 @@ struct SettingsView: View {
         
         Form {
             Toggle("Bubbler", isOn: $aquarium.bubbler_isOn)
+            
+            Stepper(value: $aquarium.temp_Warning_thres, in: 0...120, step: 1) {
+                HStack {
+                    Text("Temp Warning Threshold")
+                    Spacer()
+                    Text(String(format: "%.2f", Double(aquarium.temp_Warning_thres)))
+                }
+            }
+            .onChange(of: aquarium.temp_Warning_thres) { oldValue, newValue in
+                aquarium.updateAquariumSetting(command: "temp_Warning_thres", value: String(newValue))
+            }
+            
+            Stepper(value: $aquarium.targetTemp, in: 0...120, step: 1) {
+                HStack {
+                    Text("Target Temp")
+                    Spacer()
+                    Text(String(format: "%.2f", Double(aquarium.targetTemp)))
+                }
+            }
+            .onChange(of: aquarium.targetTemp) { oldValue, newValue in
+                aquarium.updateAquariumSetting(command: "targetTemp", value: String(newValue))
+            }
+            
+            Stepper(value: $aquarium.tds_Warning_thres, in: 0...2000, step: 10) {
+                HStack {
+                    Text("TDS Warning Threshold")
+                    Spacer()
+                    Text(String(format: "%.2f", Double(aquarium.tds_Warning_thres)))
+                }
+            }
+            .onChange(of: aquarium.tds_Warning_thres) { oldValue, newValue in
+                aquarium.updateAquariumSetting(command: "tds_Warning_thres", value: String(newValue))
+            }
+            
+            Stepper(value: $aquarium.daysFed_Warning_thres, in: 0...30, step: 1) {
+                HStack {
+                    Text("Days Fed Warning Threshold")
+                    Spacer()
+                    Text(String(format: "%.2f", Double(aquarium.daysFed_Warning_thres)))
+                }
+            }
+            .onChange(of: aquarium.daysFed_Warning_thres) { oldValue, newValue in
+                aquarium.updateAquariumSetting(command: "daysFed_Warning_thres", value: String(newValue))
+            }
+            
+            Toggle("Lamp", isOn: $aquarium.lamp_isOn)
+                .onChange(of: aquarium.lamp_isOn) { oldValue, newValue in
+                    aquarium.updateAquariumSetting(command: "lamp", value: newValue ? "true" : "false")
+                }
+
         }
 
         VStack(alignment: .leading, spacing: 12) {

@@ -12,18 +12,30 @@ import SwiftUI
 
 class DiceSessionManager: NSObject, ObservableObject {
     
-// mark: settings
+    // mark: settings
     @Published var bubbler_isOn: Bool = false
+    @Published var temp_Warning_thres: Float = 25.0
+    @Published var targetTemp: Float = 26
+    @Published var tds_Warning_thres: Float = 2000.0
+    @Published var daysFed_Warning_thres: Int = 5
+    @Published var lamp_isOn: Bool = false
     @Published var r_LED: Int = 0
     @Published var g_LED: Int = 0
     @Published var b_LED: Int = 0
+    // end of settings
 
     // mark: readings
     @Published var tds_level: Float = 0.0
     @Published var water_temp: Float = 0.0
     @Published var daysSinceFed: Int = 0
+    @Published var waterLevel_isFull: Bool = false
+    // warnings
+    @Published var tds_isOk: Bool = true
+    @Published var temp_isOk: Bool = true
+    @Published var daysFed_isOk: Bool = true
+    @Published var waterLevel_isOk: Bool = true
     
-
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////
     @Published var accessory: SmartAquarium?
     @Published var peripheralConnected = false
     @Published var pickerDismissed = true
@@ -161,8 +173,6 @@ class DiceSessionManager: NSObject, ObservableObject {
         print("Sending command")
         if let peripheral = peripheral, let iosCommandCharacteristic = iosCommandCharacteristic {
            
-            
-            
             struct Command: Codable {
                 var command: String
                 var value: String
@@ -301,16 +311,15 @@ extension DiceSessionManager: CBPeripheralDelegate {
         
         do {
             let decodedReadings = try decoder.decode(Readings.self, from: data)
-            
-            // Now you have actual variables!
-//            print("Current water temp: \(decodedReadings.temp)")
-//            print("Current tds: \(decodedReadings.tds)")
-//            print("days since last fed: \(decodedReadings.fed)")
-
-            // store the readings from esp to varibles
             tds_level = decodedReadings.tds
             water_temp = decodedReadings.temp
             daysSinceFed = decodedReadings.fed
+            tds_isOk = decodedReadings.tds_isOk
+            temp_isOk = decodedReadings.temp_isOk
+            daysFed_isOk = decodedReadings.daysFed_isOk
+            waterLevel_isOk = decodedReadings.waterLevel_isOk
+            
+            
             
         } catch {
             print("Failed to decode JSON: \(error)")
@@ -322,17 +331,15 @@ extension DiceSessionManager: CBPeripheralDelegate {
         
         do {
             let decodedSettings = try decoder.decode(ESPSettings.self, from: data)
-            
-            // Now you have actual variables!
-            print("Bubbler is now: \(decodedSettings.bubbler)")
-            print("Color is: R\(decodedSettings.r) G\(decodedSettings.g) B\(decodedSettings.b)")
-            
-            // Update your UI or State here
+            bubbler_isOn = decodedSettings.bubbler
+            temp_Warning_thres = decodedSettings.temp_Warning_thres
+            targetTemp = decodedSettings.targetTemp
+            tds_Warning_thres = decodedSettings.tds_Warning_thres
+            daysFed_Warning_thres = decodedSettings.daysFed_Warning_thres
+            lamp_isOn = decodedSettings.lamp
             r_LED = decodedSettings.r
             g_LED = decodedSettings.g
             b_LED = decodedSettings.b
-            
-            bubbler_isOn = decodedSettings.bubbler
             
         } catch {
             print("Failed to decode JSON: \(error)")
@@ -343,6 +350,11 @@ extension DiceSessionManager: CBPeripheralDelegate {
 
 struct ESPSettings: Codable {
     let bubbler: Bool
+    let lamp: Bool
+    let temp_Warning_thres: Float
+    let targetTemp: Float
+    let tds_Warning_thres: Float
+    let daysFed_Warning_thres: Int
     let r: Int
     let g: Int
     let b: Int
@@ -352,5 +364,10 @@ struct Readings: Codable {
     let tds: Float // tds reading.
     let temp: Float // water temp.
     let fed: Int // days since last fed.
+    let tds_isOk: Bool
+    let temp_isOk: Bool
+    let daysFed_isOk: Bool
+    let waterLevel_isOk: Bool
+    
 }
 

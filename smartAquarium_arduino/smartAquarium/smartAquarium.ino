@@ -61,8 +61,6 @@ class IosCommandCallbacks : public NimBLECharacteristicCallbacks {
                   iosCommandCallbacks->getValue().c_str());
 
     String payload = iosCommandCallbacks->getValue().c_str();
-    Serial.println("RawCommand:");
-    Serial.println(payload);
     // Stream& input;
     StaticJsonDocument<128> doc;
     DeserializationError error = deserializeJson(doc, payload);
@@ -83,7 +81,7 @@ class IosCommandCallbacks : public NimBLECharacteristicCallbacks {
       aquarium.settings.b_LED = int(doc["value3"]);
       pixels.setPixelColor(0, pixels.Color(aquarium.settings.g_LED, aquarium.settings.r_LED, aquarium.settings.b_LED));
       pixels.show();
-    } else if (strcmp(command, "bubbler") == 0) {
+    } else if (strcmp(command, "bubbler") == 0) {  // bubbler toggled.
 
       if (strcmp(value, "true") == 0) {
         aquarium.settings.bubbler_isOn = true;
@@ -97,6 +95,46 @@ class IosCommandCallbacks : public NimBLECharacteristicCallbacks {
         Serial.println("Bubbler off!");
       }
     }
+
+    else if (strcmp(command, "temp_Warning_thres") == 0) {  // temp_Warning_thres
+      aquarium.settings.temp_Warning_thres = doc["value"];
+      Serial.print("temp_Warning_thres: ");
+      Serial.println(aquarium.settings.temp_Warning_thres);
+    }
+
+    else if (strcmp(command, "targetTemp") == 0) {  // targetTemp
+      aquarium.settings.targetTemp = doc["value"];
+      Serial.print("targetTemp: ");
+      Serial.println(aquarium.settings.targetTemp);
+    }
+
+    else if (strcmp(command, "tds_Warning_thres") == 0) {  // tds_Warning_thres
+      aquarium.settings.tds_Warning_thres = doc["value"];
+      Serial.print("tds_Warning_thres: ");
+      Serial.println(aquarium.settings.tds_Warning_thres);
+    }
+
+    else if (strcmp(command, "daysFed_Warning_thres") == 0) {  // daysFed_Warning_thres
+      aquarium.settings.daysFed_Warning_thres = doc["value"];
+      Serial.print("daysFed_Warning_thres: ");
+      Serial.println(aquarium.settings.daysFed_Warning_thres);
+    }
+
+    else if (strcmp(command, "lamp") == 0) {  // lamp
+      if (strcmp(value, "true") == 0) {
+        aquarium.settings.lamp_isOn = true;
+      } else {
+        aquarium.settings.lamp_isOn = false;
+      }
+
+      if (aquarium.settings.lamp_isOn) {
+        Serial.println("Lamp On.");
+      } else {
+        Serial.println("Lamp Off.");
+      }
+    }
+
+
 
     // else if ... other commands to read.
   }
@@ -195,7 +233,13 @@ int value;
 
 
 void sendReadingsUpdateToApp() {
-  readingsChacteristic->setValue(aquarium.readings.serialize());
+  // String serialize(bool tds_isOk, bool temp_isOk, bool daysFed_isOk, bool waterLevel_isOk) {
+
+  readingsChacteristic->setValue(aquarium.readings.serialize(
+    aquarium.readings.tds_level < aquarium.settings.tds_Warning_thres ? true : false,
+    aquarium.readings.water_temp < aquarium.settings.temp_Warning_thres ? true : false,
+    aquarium.readings.daysSinceFed <= aquarium.settings.daysFed_Warning_thres ? true : false,
+    aquarium.readings.waterLevel_isFull));
   readingsChacteristic->notify();
 }
 

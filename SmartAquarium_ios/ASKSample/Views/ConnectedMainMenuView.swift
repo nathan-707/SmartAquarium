@@ -49,9 +49,36 @@ struct ConnectedMainMenuView: View {
                     ReadingCard(title: "Water Temp", value: String(aquarium.water_temp), unit: "°C", symbol: "thermometer.medium")
                     ReadingCard(title: "TDS", value: String(aquarium.tds_level), unit: "ppm", symbol: "bubbles.and.sparkles.fill")
                     ReadingCard(title: "Days Since Fed", value: String(aquarium.daysSinceFed), unit: "days", symbol: "fish.fill")
+                    ReadingCard(title: "Water Level", value: String(aquarium.waterLevel_isFull ? "OK" : "LOW"), unit: "", symbol: "water.waves.and.arrow.trianglehead.up")
                 }
                 .padding(.horizontal)
                 .padding(.top, 8)
+                
+                ScrollView{
+                VStack{ // error reports.
+                    
+                    if !aquarium.tds_isOk {
+                        WarningCard(title: "High TDS", message: "Total dissolved solids are above your threshold.")
+                    }
+                    if !aquarium.temp_isOk {
+                        WarningCard(title: "Temperature Warning", message: "Water temperature is outside your target range.")
+                    }
+                    if !aquarium.daysFed_isOk {
+                        WarningCard(title: "Feeding Reminder", message: "It has been too long since the last feeding.")
+                    }
+                    if !aquarium.waterLevel_isOk {
+                        WarningCard(title: "Low Water Level", message: "Please top off the tank water level.")
+                    }
+                    
+               
+                    
+                }
+                }.padding(.top)
+                    .padding(.horizontal)
+                
+                
+                
+                
               
                
 //                
@@ -136,8 +163,43 @@ struct ConnectedMainMenuView: View {
             .frame(height: 80)
         }
     }
+    
+    private struct WarningCard: View {
+        let title: String
+        let message: String
+
+        var body: some View {
+            ZStack {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.red.opacity(0.12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(Color.red.opacity(0.35), lineWidth: 1)
+                    )
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                        .imageScale(.large)
+                        .opacity(0.9)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(title)
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+                        Text(message)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                }
+                .padding(16)
+            }
+            .frame(maxWidth: .infinity)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+    }
 }
 
 #Preview {
     ConnectedMainMenuView()
 }
+

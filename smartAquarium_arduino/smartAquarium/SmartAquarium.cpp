@@ -53,12 +53,3 @@ void SmartAquarium::applyHardwareState() {
 
  
 }
-
-
-String SmartAquarium::getSettingsJSON() {
-  return settings.serialize();
-}
-
-String SmartAquarium::getReadingsJSON() {
-  return readings.serialize();
-}
