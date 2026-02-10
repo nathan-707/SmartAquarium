@@ -8,7 +8,7 @@ Defines dice color options.
 import CoreBluetooth
 import SwiftUI
 
-enum DiceColor: String {
+enum SmartAquarium: String {
     case blue
 
     var color: Color {

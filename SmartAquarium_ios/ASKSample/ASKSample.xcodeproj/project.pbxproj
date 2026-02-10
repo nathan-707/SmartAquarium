@@ -7,31 +7,35 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		470379AF2BE0A75400B3AAE5 /* DiceSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 470379AE2BE0A75400B3AAE5 /* DiceSessionManager.swift */; };
-		475177322BE04ADE00D73F7D /* DiceColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 475177312BE04ADE00D73F7D /* DiceColor.swift */; };
-		475177332BE04ADE00D73F7D /* DiceColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 475177312BE04ADE00D73F7D /* DiceColor.swift */; };
 		4751774E2BE08B0D00D73F7D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4751774D2BE08B0D00D73F7D /* ContentView.swift */; };
 		479D045E2BBE168A005BAE19 /* ASKSampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 479D045D2BBE168A005BAE19 /* ASKSampleApp.swift */; };
 		479D04622BBE168C005BAE19 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 479D04612BBE168C005BAE19 /* Assets.xcassets */; };
-		47DC724F2BE9C9E500946AEE /* DiceValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47DC724E2BE9C9E500946AEE /* DiceValue.swift */; };
-		47DC72502BE9C9E500946AEE /* DiceValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47DC724E2BE9C9E500946AEE /* DiceValue.swift */; };
 		47E7F71C2BC7368E00891891 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 479D04612BBE168C005BAE19 /* Assets.xcassets */; };
 		82D0012E2F393008004450A4 /* AquariumUpdateCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D0012D2F393008004450A4 /* AquariumUpdateCommand.swift */; };
+		82D85D442F3AF1F300F0A174 /* ConnectedMainMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D85D432F3AF1F300F0A174 /* ConnectedMainMenuView.swift */; };
+		82D85D462F3AF2D500F0A174 /* SearchingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D85D452F3AF2D500F0A174 /* SearchingView.swift */; };
+		82D85D482F3AF4BF00F0A174 /* SmartAquarium.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D85D472F3AF4BF00F0A174 /* SmartAquarium.swift */; };
+		82D85D4A2F3AF4E400F0A174 /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D85D492F3AF4E400F0A174 /* SessionManager.swift */; };
+		82D85D4F2F3AF6D800F0A174 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D85D4E2F3AF6D800F0A174 /* SettingsView.swift */; };
+		82D85D572F3AF92500F0A174 /* ColorTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D85D562F3AF92500F0A174 /* ColorTile.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		3B497D5C28806A67C71DA29E /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
-		470379AE2BE0A75400B3AAE5 /* DiceSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiceSessionManager.swift; sourceTree = "<group>"; };
-		475177312BE04ADE00D73F7D /* DiceColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiceColor.swift; sourceTree = "<group>"; };
 		475177342BE051EC00D73F7D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		4751774D2BE08B0D00D73F7D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		479D045A2BBE168A005BAE19 /* ASKSample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ASKSample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		479D045D2BBE168A005BAE19 /* ASKSampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ASKSampleApp.swift; sourceTree = "<group>"; };
 		479D04612BBE168C005BAE19 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		479D04942BBE254E005BAE19 /* ASKSampleAccessory.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ASKSampleAccessory.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		47DC724E2BE9C9E500946AEE /* DiceValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiceValue.swift; sourceTree = "<group>"; };
 		82D0012C2F3880C7004450A4 /* TODO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TODO.swift; sourceTree = "<group>"; };
 		82D0012D2F393008004450A4 /* AquariumUpdateCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AquariumUpdateCommand.swift; sourceTree = "<group>"; };
+		82D85D432F3AF1F300F0A174 /* ConnectedMainMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectedMainMenuView.swift; sourceTree = "<group>"; };
+		82D85D452F3AF2D500F0A174 /* SearchingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchingView.swift; sourceTree = "<group>"; };
+		82D85D472F3AF4BF00F0A174 /* SmartAquarium.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartAquarium.swift; sourceTree = "<group>"; };
+		82D85D492F3AF4E400F0A174 /* SessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManager.swift; sourceTree = "<group>"; };
+		82D85D4E2F3AF6D800F0A174 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		82D85D562F3AF92500F0A174 /* ColorTile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorTile.swift; sourceTree = "<group>"; };
 		A30FC6C8CA8EB4280921F77F /* SampleCode.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = SampleCode.xcconfig; path = ../Configuration/SampleCode.xcconfig; sourceTree = "<group>"; };
 		B6A3E350A5DF840AF56CD329 /* LICENSE.txt */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; path = LICENSE.txt; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -66,9 +70,11 @@
 			isa = PBXGroup;
 			children = (
 				82D0012C2F3880C7004450A4 /* TODO.swift */,
+				82D85D4D2F3AF56600F0A174 /* ASKSample */,
+				82D85D4C2F3AF51100F0A174 /* Views */,
+				82D85D4B2F3AF50C00F0A174 /* Files */,
 				3B497D5C28806A67C71DA29E /* README.md */,
 				CFEA64BB2BDB27AA00FA8571 /* Shared */,
-				479D045C2BBE168A005BAE19 /* ASKSample */,
 				479D045B2BBE168A005BAE19 /* Products */,
 				479D04F42BBE33DB005BAE19 /* Frameworks */,
 				416459335B3566378581E6F4 /* Configuration */,
@@ -85,18 +91,6 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		479D045C2BBE168A005BAE19 /* ASKSample */ = {
-			isa = PBXGroup;
-			children = (
-				479D045D2BBE168A005BAE19 /* ASKSampleApp.swift */,
-				470379AE2BE0A75400B3AAE5 /* DiceSessionManager.swift */,
-				82D0012D2F393008004450A4 /* AquariumUpdateCommand.swift */,
-				4751774D2BE08B0D00D73F7D /* ContentView.swift */,
-				475177342BE051EC00D73F7D /* Info.plist */,
-			);
-			path = ASKSample;
-			sourceTree = "<group>";
-		};
 		479D04F42BBE33DB005BAE19 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -104,11 +98,40 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		82D85D4B2F3AF50C00F0A174 /* Files */ = {
+			isa = PBXGroup;
+			children = (
+				82D85D492F3AF4E400F0A174 /* SessionManager.swift */,
+				82D85D472F3AF4BF00F0A174 /* SmartAquarium.swift */,
+				479D045D2BBE168A005BAE19 /* ASKSampleApp.swift */,
+				82D0012D2F393008004450A4 /* AquariumUpdateCommand.swift */,
+			);
+			path = Files;
+			sourceTree = "<group>";
+		};
+		82D85D4C2F3AF51100F0A174 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				82D85D562F3AF92500F0A174 /* ColorTile.swift */,
+				82D85D4E2F3AF6D800F0A174 /* SettingsView.swift */,
+				82D85D452F3AF2D500F0A174 /* SearchingView.swift */,
+				4751774D2BE08B0D00D73F7D /* ContentView.swift */,
+				82D85D432F3AF1F300F0A174 /* ConnectedMainMenuView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		82D85D4D2F3AF56600F0A174 /* ASKSample */ = {
+			isa = PBXGroup;
+			children = (
+				475177342BE051EC00D73F7D /* Info.plist */,
+			);
+			path = ASKSample;
+			sourceTree = "<group>";
+		};
 		CFEA64BB2BDB27AA00FA8571 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
-				475177312BE04ADE00D73F7D /* DiceColor.swift */,
-				47DC724E2BE9C9E500946AEE /* DiceValue.swift */,
 				479D04612BBE168C005BAE19 /* Assets.xcassets */,
 			);
 			path = Shared;
@@ -222,12 +245,15 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				82D85D572F3AF92500F0A174 /* ColorTile.swift in Sources */,
 				479D045E2BBE168A005BAE19 /* ASKSampleApp.swift in Sources */,
+				82D85D4F2F3AF6D800F0A174 /* SettingsView.swift in Sources */,
 				4751774E2BE08B0D00D73F7D /* ContentView.swift in Sources */,
-				475177322BE04ADE00D73F7D /* DiceColor.swift in Sources */,
-				47DC724F2BE9C9E500946AEE /* DiceValue.swift in Sources */,
-				470379AF2BE0A75400B3AAE5 /* DiceSessionManager.swift in Sources */,
+				82D85D482F3AF4BF00F0A174 /* SmartAquarium.swift in Sources */,
+				82D85D462F3AF2D500F0A174 /* SearchingView.swift in Sources */,
 				82D0012E2F393008004450A4 /* AquariumUpdateCommand.swift in Sources */,
+				82D85D442F3AF1F300F0A174 /* ConnectedMainMenuView.swift in Sources */,
+				82D85D4A2F3AF4E400F0A174 /* SessionManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -235,8 +261,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				47DC72502BE9C9E500946AEE /* DiceValue.swift in Sources */,
-				475177332BE04ADE00D73F7D /* DiceColor.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -379,7 +403,7 @@
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ASKSample/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "ASK Sample";
+				INFOPLIST_KEY_CFBundleDisplayName = Aquarium;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -423,7 +447,7 @@
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ASKSample/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "ASK Sample";
+				INFOPLIST_KEY_CFBundleDisplayName = Aquarium;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

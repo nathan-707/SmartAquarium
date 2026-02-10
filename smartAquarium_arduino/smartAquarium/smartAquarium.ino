@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <NimBLEDevice.h>
 #include <ArduinoJson.h>
+#include <Adafruit_NeoPixel.h>
 #include "SmartAquarium.h"
 
 
@@ -10,7 +11,8 @@
 #define lightPin 0
 
 SmartAquarium aquarium(pumpPin, lightPin);
-
+#define PIN 38
+#define NUMPIXELS 1
 /////////////////////////////////// mark bluetooth ///////////////////////////////////////////////////
 #define SERVICE_UUID "E56A082E-C49B-47CA-A2AB-389127B8ABE7"
 #define CHARACTERISTIC_UUID "FF3F"
@@ -23,6 +25,8 @@ static NimBLEServer* pServer;
 NimBLECharacteristic* pCharacteristic;
 NimBLECharacteristic* appCommandChacteristic;
 NimBLECharacteristic* readingsChacteristic;
+Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_RGB + NEO_KHZ800);
+
 
 void pingSettingsToApp() {
   pCharacteristic->setValue(aquarium.settings.serialize());
@@ -77,7 +81,24 @@ class IosCommandCallbacks : public NimBLECharacteristicCallbacks {
       aquarium.settings.r_LED = int(doc["value"]);
       aquarium.settings.g_LED = int(doc["value2"]);
       aquarium.settings.b_LED = int(doc["value3"]);
+      pixels.setPixelColor(0, pixels.Color(aquarium.settings.g_LED, aquarium.settings.r_LED, aquarium.settings.b_LED));
+      pixels.show();
+    } else if (strcmp(command, "bubbler") == 0) {
+
+      if (strcmp(value, "true") == 0) {
+        aquarium.settings.bubbler_isOn = true;
+      } else {
+        aquarium.settings.bubbler_isOn = false;
+      }
+
+      if (aquarium.settings.bubbler_isOn) {
+        Serial.println("Bubbler on!");
+      } else {
+        Serial.println("Bubbler off!");
+      }
     }
+
+    // else if ... other commands to read.
   }
 
 } iosCommandCallbacks;
@@ -110,7 +131,7 @@ class CharacteristicCallbacks : public NimBLECharacteristicCallbacks {
     Serial.printf("Write request on: %s, Value: %s\n",
                   pCharacteristic->getUUID().toString().c_str(),
                   pCharacteristic->getValue().c_str());
-                  pingSettingsToApp();
+    pingSettingsToApp();
   }
 } chrCallbacks;
 
@@ -167,6 +188,7 @@ void setupBLE() {
 
 void setup(void) {
   Serial.begin(9600);
+  pixels.begin();
   setupBLE();
 }
 int value;

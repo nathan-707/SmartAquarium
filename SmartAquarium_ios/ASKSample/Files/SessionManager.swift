@@ -24,8 +24,7 @@ class DiceSessionManager: NSObject, ObservableObject {
     @Published var daysSinceFed: Int = 0
     
 
-    @Published var diceColor: DiceColor?
-    @Published var diceValue = DiceValue.one
+    @Published var accessory: SmartAquarium?
     @Published var peripheralConnected = false
     @Published var pickerDismissed = true
 
@@ -45,11 +44,11 @@ class DiceSessionManager: NSObject, ObservableObject {
 
     private static let blueDice: ASPickerDisplayItem = {
         let descriptor = ASDiscoveryDescriptor()
-        descriptor.bluetoothServiceUUID = DiceColor.blue.serviceUUID
+        descriptor.bluetoothServiceUUID = SmartAquarium.blue.serviceUUID
 
         return ASPickerDisplayItem(
-            name: DiceColor.blue.displayName,
-            productImage: UIImage(named: DiceColor.blue.diceName)!,
+            name: SmartAquarium.blue.displayName,
+            productImage: UIImage(named: SmartAquarium.blue.diceName)!,
             descriptor: descriptor
         )
     }()
@@ -78,7 +77,7 @@ class DiceSessionManager: NSObject, ObservableObject {
 
         do {
             try await session.removeAccessory(currentDice)
-            self.diceColor = nil
+            self.accessory = nil
             self.currentDice = nil
             self.manager = nil
         } catch let error {
@@ -112,7 +111,7 @@ class DiceSessionManager: NSObject, ObservableObject {
             manager = CBCentralManager(delegate: self, queue: nil)
         }
 
-            diceColor = .blue
+        accessory = .blue
         
     }
 
@@ -127,7 +126,7 @@ class DiceSessionManager: NSObject, ObservableObject {
             connect()
 
         case .accessoryRemoved:
-            self.diceColor = nil
+            self.accessory = nil
             self.currentDice = nil
             self.manager = nil
         case .pickerDidPresent:
@@ -158,12 +157,10 @@ class DiceSessionManager: NSObject, ObservableObject {
     private var blue = 30
 
 
-    func updateAquariumSetting(update: String){
-        print("Sending command: \(update)")
+    func updateAquariumSetting(command: String, value: String = "", value2: String = "", value3: String = ""){
+        print("Sending command")
         if let peripheral = peripheral, let iosCommandCharacteristic = iosCommandCharacteristic {
-            red += 10
-            green += 10
-            blue += 10
+           
             
             
             struct Command: Codable {
@@ -173,10 +170,10 @@ class DiceSessionManager: NSObject, ObservableObject {
                 var value3: String
             }
             let toESP = Command(
-                command: "RGB",
-                value: String(red),
-                value2: String(green),
-                value3: String(blue)
+                command: command,
+                value: value,
+                value2: value2,
+                value3: value3
             )
             peripheral.writeValue(
                 encodeTOJSON(any: toESP),
@@ -209,9 +206,9 @@ extension DiceSessionManager: CBCentralManagerDelegate {
 
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         print("Connected to peripheral: \(peripheral)")
-        guard let diceColor else { return }
+        guard let accessory else { return }
         peripheral.delegate = self
-        peripheral.discoverServices([diceColor.serviceUUID])
+        peripheral.discoverServices([accessory.serviceUUID])
         peripheralConnected = true
     }
 
@@ -306,9 +303,9 @@ extension DiceSessionManager: CBPeripheralDelegate {
             let decodedReadings = try decoder.decode(Readings.self, from: data)
             
             // Now you have actual variables!
-            print("Current water temp: \(decodedReadings.temp)")
-            print("Current tds: \(decodedReadings.tds)")
-            print("days since last fed: \(decodedReadings.fed)")
+//            print("Current water temp: \(decodedReadings.temp)")
+//            print("Current tds: \(decodedReadings.tds)")
+//            print("days since last fed: \(decodedReadings.fed)")
 
             // store the readings from esp to varibles
             tds_level = decodedReadings.tds
