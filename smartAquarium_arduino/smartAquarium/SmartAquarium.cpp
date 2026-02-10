@@ -10,7 +10,6 @@ SmartAquarium::SmartAquarium(int pumpPin, int lightPin) {
 
   // Set Defaults
   settings.bubbler_isOn = false;
-  settings.display_isOn = true;
   settings.r_LED = 0;
   settings.g_LED = 255; // Start Green
   settings.b_LED = 0;
@@ -28,21 +27,12 @@ void SmartAquarium::begin() {
   applyHardwareState();
 }
 
-// -------------------------------------------------------------------------
-// Main Loop Logic
-// -------------------------------------------------------------------------
 
 void SmartAquarium::update() {
-  // 1. Update Sensors
   readSensors();
-
-  // 2. Apply Settings to Hardware
   applyHardwareState();
 }
 
-// -------------------------------------------------------------------------
-// Private Helpers
-// -------------------------------------------------------------------------
 
 void SmartAquarium::readSensors() {
   static unsigned long lastReadTime = 0;
@@ -61,20 +51,9 @@ void SmartAquarium::applyHardwareState() {
   // 1. Control Bubbler
   digitalWrite(_pumpPin, settings.bubbler_isOn ? HIGH : LOW);
 
-  // 2. Control Lights
-  // Logic: If display is OFF, force lights LOW. Otherwise use LED values.
-  if (!settings.display_isOn) {
-    digitalWrite(_lightPin, LOW); 
-  } else {
-    // Simple digital simulation for now
-    bool anyColor = (settings.r_LED > 0 || settings.g_LED > 0 || settings.b_LED > 0);
-    digitalWrite(_lightPin, anyColor ? HIGH : LOW);
-  }
+ 
 }
 
-// -------------------------------------------------------------------------
-// Public JSON Wrappers
-// -------------------------------------------------------------------------
 
 String SmartAquarium::getSettingsJSON() {
   return settings.serialize();

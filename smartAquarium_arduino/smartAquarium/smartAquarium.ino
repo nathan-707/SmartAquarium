@@ -16,10 +16,18 @@ SmartAquarium aquarium(pumpPin, lightPin);
 #define CHARACTERISTIC_UUID "FF3F"
 
 #define CHARACTERISTIC_UUID_IOS "BB3B"
+#define CHARACTERISTIC_UUID_READINGS "CC3C"
+
 
 static NimBLEServer* pServer;
 NimBLECharacteristic* pCharacteristic;
 NimBLECharacteristic* appCommandChacteristic;
+NimBLECharacteristic* readingsChacteristic;
+
+void pingSettingsToApp() {
+  pCharacteristic->setValue(aquarium.settings.serialize());
+  pCharacteristic->notify();
+}
 
 /** Server Callbacks */
 class ServerCallbacks : public NimBLEServerCallbacks {
@@ -27,6 +35,8 @@ class ServerCallbacks : public NimBLEServerCallbacks {
     Serial.printf("Client connected: %s\n", connInfo.getAddress().toString().c_str());
     // Update connection params for faster response
     pServer->updateConnParams(connInfo.getConnHandle(), 24, 48, 0, 60);
+    // Update value and notify
+    pingSettingsToApp();
   }
 
   void onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) override {
@@ -57,11 +67,11 @@ class IosCommandCallbacks : public NimBLECharacteristicCallbacks {
       Serial.println(error.c_str());
       return;
     }
-    const char* command = doc["command"];  
-    const char* value2 = doc["value2"];    
-    const char* value = doc["value"];      
-    const char* value3 = doc["value3"];   
-    
+    const char* command = doc["command"];
+    const char* value2 = doc["value2"];
+    const char* value = doc["value"];
+    const char* value3 = doc["value3"];
+
 
     if (strcmp(command, "RGB") == 0) {  // rgb update.
       aquarium.settings.r_LED = int(doc["value"]);
@@ -73,7 +83,19 @@ class IosCommandCallbacks : public NimBLECharacteristicCallbacks {
 } iosCommandCallbacks;
 
 
+class ReadingCommandCallbacks : public NimBLECharacteristicCallbacks {
 
+  void onRead(NimBLECharacteristic* readingCommandCallbacks, NimBLEConnInfo& connInfo) override {
+    Serial.printf("Read request on: %s\n", readingCommandCallbacks->getUUID().toString().c_str());
+  }
+
+  void onWrite(NimBLECharacteristic* readingCommandCallbacks, NimBLEConnInfo& connInfo) override {
+    Serial.printf("Write request on: %s, Value: %s\n",
+                  readingCommandCallbacks->getUUID().toString().c_str(),
+                  readingCommandCallbacks->getValue().c_str());
+  }
+
+} readingCommandCallbacks;
 
 
 /** Characteristic Callbacks */
@@ -81,12 +103,14 @@ class CharacteristicCallbacks : public NimBLECharacteristicCallbacks {
 
   void onRead(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override {
     Serial.printf("Read request on: %s\n", pCharacteristic->getUUID().toString().c_str());
+    pingSettingsToApp();
   }
 
   void onWrite(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override {
     Serial.printf("Write request on: %s, Value: %s\n",
                   pCharacteristic->getUUID().toString().c_str(),
                   pCharacteristic->getValue().c_str());
+                  pingSettingsToApp();
   }
 } chrCallbacks;
 
@@ -115,9 +139,15 @@ void setupBLE() {
   appCommandChacteristic = pService->createCharacteristic(
     CHARACTERISTIC_UUID_IOS,
     NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::NOTIFY);
-
-  appCommandChacteristic->setValue("sugma");
   appCommandChacteristic->setCallbacks(&iosCommandCallbacks);
+
+
+  readingsChacteristic = pService->createCharacteristic(
+    CHARACTERISTIC_UUID_READINGS,
+    NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::NOTIFY);
+  readingsChacteristic->setCallbacks(&readingCommandCallbacks);
+
+
 
 
 
@@ -139,37 +169,24 @@ void setup(void) {
   Serial.begin(9600);
   setupBLE();
 }
+int value;
 
-int val = 1;
+
+void sendReadingsUpdateToApp() {
+  readingsChacteristic->setValue(aquarium.readings.serialize());
+  readingsChacteristic->notify();
+}
 
 void loop() {
 
   delay(2000);
+  aquarium.update();  // for now randomly changes the reading, later make it actually read sensors.
 
   // Only notify if a client is connected
   if (pServer->getConnectedCount() > 0) {
 
-    // DIRECT ACCESS: No more searching for UUIDs!
-    // We simply use the global pointer we created in setup.
-    if (pCharacteristic) {
-
-      // Generate a value to send
-
-      val++;
-
-      if (val > 6) {
-        val = 1;
-      }
-      // aquarium.settings.r_LED = val;
-
-
-      std::string msg = std::to_string(val);
-
-      // Update value and notify
-      pCharacteristic->setValue(aquarium.settings.serialize());
-      pCharacteristic->notify();
-
-      Serial.printf("Notification sent: %s\n", msg.c_str());
+    if (readingsChacteristic) {
+      sendReadingsUpdateToApp();
     }
   }
 }

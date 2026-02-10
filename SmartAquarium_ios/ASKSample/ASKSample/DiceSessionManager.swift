@@ -13,11 +13,7 @@ import SwiftUI
 class DiceSessionManager: NSObject, ObservableObject {
     
 // mark: settings
-    
-    @Published var settings = ""
     @Published var bubbler_isOn: Bool = false
-    @Published var heater_isOn: Bool = false
-    @Published var display_isOn: Bool = false
     @Published var r_LED: Int = 0
     @Published var g_LED: Int = 0
     @Published var b_LED: Int = 0
@@ -27,9 +23,7 @@ class DiceSessionManager: NSObject, ObservableObject {
     @Published var water_temp: Float = 0.0
     @Published var daysSinceFed: Int = 0
     
-    
 
-    
     @Published var diceColor: DiceColor?
     @Published var diceValue = DiceValue.one
     @Published var peripheralConnected = false
@@ -41,9 +35,11 @@ class DiceSessionManager: NSObject, ObservableObject {
     private var peripheral: CBPeripheral?
     private var rollResultCharacteristic: CBCharacteristic?
     private var iosCommandCharacteristic: CBCharacteristic?
+    private var readingsCharacteristic: CBCharacteristic?
 
     private static let diceRollCharacteristicUUID = "0xFF3F"
     private static let CHARACTERISTIC_UUID_IOS = "0xBB3B"
+    private static let CHARACTERISTIC_UUID_READINGS = "0xCC3C"
 
 
 
@@ -145,6 +141,12 @@ class DiceSessionManager: NSObject, ObservableObject {
     
     func pingAquarium(){
         print("pinging aquarium")
+        
+        if let settingsChar = rollResultCharacteristic {
+            peripheral?.readValue(for: settingsChar)
+        }
+
+        
     }
     
     private struct IOSCommandPayload: Codable {
@@ -209,9 +211,7 @@ extension DiceSessionManager: CBCentralManagerDelegate {
         print("Connected to peripheral: \(peripheral)")
         guard let diceColor else { return }
         peripheral.delegate = self
-        
         peripheral.discoverServices([diceColor.serviceUUID])
-        
         peripheralConnected = true
     }
 
@@ -257,25 +257,25 @@ extension DiceSessionManager: CBPeripheralDelegate {
         for characteristic in characteristics {
             print("Found Characteristic: \(characteristic.uuid.uuidString)") // DEBUG PRINT
             
-            // 3. Check for match (Compare strings to be safe)
-            // This handles "FF3F" vs "0xFF3F" vs "ff3f" automatically
             if characteristic.uuid.uuidString.caseInsensitiveCompare("FF3F") == .orderedSame ||
                 characteristic.uuid.uuidString == "0xFF3F" {
-                
-                print("MATCH FOUND! Subscribing to notifications...")
-                
+                print("settings characteristic found!")
                 rollResultCharacteristic = characteristic
-                
-                // 4. CRITICAL: This tells the ESP32 "Start sending me data!"
-                peripheral.setNotifyValue(true, for: characteristic)
-                
-                // 5. Read the initial value
                 peripheral.readValue(for: characteristic)
             } else if characteristic.uuid.uuidString.caseInsensitiveCompare("BB3B") == .orderedSame ||
                             characteristic.uuid.uuidString == "0xBB3B" {
                 print("ios characteristic found!")
                 iosCommandCharacteristic = characteristic
             }
+            
+            else if characteristic.uuid.uuidString.caseInsensitiveCompare("CC3C") == .orderedSame ||
+                            characteristic.uuid.uuidString == "0xCC3C" {
+                print("readings characteristic found!")
+                readingsCharacteristic = characteristic
+            }
+            
+            peripheral.setNotifyValue(true, for: characteristic)
+
         }
     }
     
@@ -292,18 +292,38 @@ extension DiceSessionManager: CBPeripheralDelegate {
             
         case CBUUID(string: Self.CHARACTERISTIC_UUID_IOS):
             print("IOS")
-            break
             
+        case CBUUID(string: Self.CHARACTERISTIC_UUID_READINGS):
+            handleReadingsUpdate(from: data)
         default:
             print("Received update for unknown characteristic: \(characteristic.uuid)")
         }
     }
-    
+    private func handleReadingsUpdate(from data: Data) {
+        let decoder = JSONDecoder()
+        
+        do {
+            let decodedReadings = try decoder.decode(Readings.self, from: data)
+            
+            // Now you have actual variables!
+            print("Current water temp: \(decodedReadings.temp)")
+            print("Current tds: \(decodedReadings.tds)")
+            print("days since last fed: \(decodedReadings.fed)")
+
+            // store the readings from esp to varibles
+            tds_level = decodedReadings.tds
+            water_temp = decodedReadings.temp
+            daysSinceFed = decodedReadings.fed
+            
+        } catch {
+            print("Failed to decode JSON: \(error)")
+        }
+    }
+
     private func handleSettingsUpdate(from data: Data) {
         let decoder = JSONDecoder()
         
         do {
-            // This replaces your 'settings = String(diceValue)' line
             let decodedSettings = try decoder.decode(ESPSettings.self, from: data)
             
             // Now you have actual variables!
@@ -315,7 +335,6 @@ extension DiceSessionManager: CBPeripheralDelegate {
             g_LED = decodedSettings.g
             b_LED = decodedSettings.b
             
-            display_isOn = decodedSettings.display
             bubbler_isOn = decodedSettings.bubbler
             
         } catch {
@@ -327,9 +346,14 @@ extension DiceSessionManager: CBPeripheralDelegate {
 
 struct ESPSettings: Codable {
     let bubbler: Bool
-    let display: Bool
     let r: Int
     let g: Int
     let b: Int
+}
+
+struct Readings: Codable {
+    let tds: Float // tds reading.
+    let temp: Float // water temp.
+    let fed: Int // days since last fed.
 }
 

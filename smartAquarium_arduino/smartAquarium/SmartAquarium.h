@@ -7,7 +7,6 @@
 
 struct Settings {
   bool bubbler_isOn;
-  bool display_isOn;
 
 
   int r_LED;
@@ -17,7 +16,6 @@ struct Settings {
   String serialize() {
     StaticJsonDocument<200> doc; 
     doc["bubbler"] = bubbler_isOn;
-    doc["display"] = display_isOn;
     doc["r"] = r_LED;
     doc["g"] = g_LED;
     doc["b"] = b_LED;

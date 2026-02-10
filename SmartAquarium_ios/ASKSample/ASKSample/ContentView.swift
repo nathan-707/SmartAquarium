@@ -66,20 +66,18 @@ struct ContentView: View {
     @ViewBuilder
     private func makeRollView(diceColor: DiceColor) -> some View {
         VStack {
-
-            Text(aquarium.settings)
             
-            Text("Display: " + (aquarium.display_isOn ? "ON" : "OFF"))
+            Text("Water temp: " + String(aquarium.water_temp))
+            Text("TDS: " + String(aquarium.tds_level))
+            Text("Days since fed: " + String(aquarium.daysSinceFed))
+
+            
+            Divider()
             Text("Red: " + String(aquarium.r_LED))
             Text("Green: " + String(aquarium.g_LED))
             Text("Blue: " + String(aquarium.b_LED))
 
-            Image(diceColor.diceName)
-                .resizable()
-                .scaledToFit()
-                .frame(height: 60)
-                .padding(.bottom, 6)
-
+  
             Button {
                 aquarium.peripheralConnected ? aquarium.disconnect() : aquarium.connect()
             } label: {
@@ -98,7 +96,13 @@ struct ContentView: View {
             Button {
                 aquarium.updateAquariumSetting(update: updateRGBCommand(r: 7, b: 7, g: 7))
             } label: {
-                Text("Send command")
+                Text("Send rgb update")
+            }.padding()
+            
+            Button{
+                aquarium.pingAquarium()
+            } label: {
+                Text("PING")
             }.padding()
 
             Button {
