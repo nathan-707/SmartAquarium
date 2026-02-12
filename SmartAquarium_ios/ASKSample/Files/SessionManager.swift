@@ -14,10 +14,10 @@ class DiceSessionManager: NSObject, ObservableObject {
     
     // mark: settings
     @Published var bubbler_isOn: Bool = false
-    @Published var temp_Warning_thres: Float = 25.0
-    @Published var targetTemp: Float = 26
-    @Published var tds_Warning_thres: Float = 2000.0
-    @Published var daysFed_Warning_thres: Int = 5
+    @Published var temp_Warning_thres: Float = 0
+    @Published var targetTemp: Float = 0
+    @Published var tds_Warning_thres: Float = 0
+    @Published var daysFed_Warning_thres: Int = 0
     @Published var lamp_isOn: Bool = false
     @Published var r_LED: Int = 0
     @Published var g_LED: Int = 0
@@ -28,7 +28,7 @@ class DiceSessionManager: NSObject, ObservableObject {
     @Published var tds_level: Float = 0.0
     @Published var water_temp: Float = 0.0
     @Published var daysSinceFed: Int = 0
-    @Published var waterLevel_isFull: Bool = false
+    @Published var isDark: Bool = false
     // warnings
     @Published var tds_isOk: Bool = true
     @Published var temp_isOk: Bool = true
@@ -44,7 +44,7 @@ class DiceSessionManager: NSObject, ObservableObject {
     private var session = ASAccessorySession()
     private var manager: CBCentralManager?
     private var peripheral: CBPeripheral?
-    private var rollResultCharacteristic: CBCharacteristic?
+    private var settingsCharacteristic: CBCharacteristic?
     private var iosCommandCharacteristic: CBCharacteristic?
     private var readingsCharacteristic: CBCharacteristic?
 
@@ -153,7 +153,7 @@ class DiceSessionManager: NSObject, ObservableObject {
     func pingAquarium(){
         print("pinging aquarium")
         
-        if let settingsChar = rollResultCharacteristic {
+        if let settingsChar = settingsCharacteristic {
             peripheral?.readValue(for: settingsChar)
         }
 
@@ -267,7 +267,7 @@ extension DiceSessionManager: CBPeripheralDelegate {
             if characteristic.uuid.uuidString.caseInsensitiveCompare("FF3F") == .orderedSame ||
                 characteristic.uuid.uuidString == "0xFF3F" {
                 print("settings characteristic found!")
-                rollResultCharacteristic = characteristic
+                settingsCharacteristic = characteristic
                 peripheral.readValue(for: characteristic)
             } else if characteristic.uuid.uuidString.caseInsensitiveCompare("BB3B") == .orderedSame ||
                             characteristic.uuid.uuidString == "0xBB3B" {
@@ -318,9 +318,7 @@ extension DiceSessionManager: CBPeripheralDelegate {
             temp_isOk = decodedReadings.temp_isOk
             daysFed_isOk = decodedReadings.daysFed_isOk
             waterLevel_isOk = decodedReadings.waterLevel_isOk
-            
-            
-            
+            isDark = decodedReadings.isDark
         } catch {
             print("Failed to decode JSON: \(error)")
         }
@@ -368,6 +366,6 @@ struct Readings: Codable {
     let temp_isOk: Bool
     let daysFed_isOk: Bool
     let waterLevel_isOk: Bool
-    
+    let isDark: Bool
 }
 

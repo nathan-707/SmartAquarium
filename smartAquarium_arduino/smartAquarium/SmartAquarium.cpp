@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "SmartAquarium.h"
 
 // -------------------------------------------------------------------------
@@ -11,7 +12,7 @@ SmartAquarium::SmartAquarium(int pumpPin, int lightPin) {
   // Set Defaults
   settings.bubbler_isOn = false;
   settings.r_LED = 0;
-  settings.g_LED = 255; // Start Green
+  settings.g_LED = 255;  // Start Green
   settings.b_LED = 0;
 
   readings.tds_level = 0.0;
@@ -22,7 +23,7 @@ SmartAquarium::SmartAquarium(int pumpPin, int lightPin) {
 void SmartAquarium::begin() {
   pinMode(_pumpPin, OUTPUT);
   pinMode(_lightPin, OUTPUT);
-  
+
   // Apply initial state
   applyHardwareState();
 }
@@ -36,20 +37,23 @@ void SmartAquarium::update() {
 
 void SmartAquarium::readSensors() {
   static unsigned long lastReadTime = 0;
-  
+
   // Read sensors every 2 seconds (Non-blocking)
   if (millis() - lastReadTime > 2000) {
     lastReadTime = millis();
-
     // --- SIMULATION DATA (Replace with real sensors) ---
-    readings.water_temp = 24.0 + (random(-10, 10) / 10.0); // 23.0 - 25.0
-    readings.tds_level = 150 + random(0, 5);
+    readings.water_temp = 70 + (random(-5, 5));  // 23.0 - 25.0
+    readings.tds_level = 500 + random(-10, 10);
+
+    bool randomLevelReading = true;
+    readings.waterLevel_isFull = randomLevelReading;
+
+    // flag update to app.
+    sendReadingUpdateToApp = true;
   }
 }
 
 void SmartAquarium::applyHardwareState() {
   // 1. Control Bubbler
   digitalWrite(_pumpPin, settings.bubbler_isOn ? HIGH : LOW);
-
- 
 }

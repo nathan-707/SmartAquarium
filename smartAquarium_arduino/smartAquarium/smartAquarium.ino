@@ -41,6 +41,7 @@ class ServerCallbacks : public NimBLEServerCallbacks {
     pServer->updateConnParams(connInfo.getConnHandle(), 24, 48, 0, 60);
     // Update value and notify
     pingSettingsToApp();
+    sendReadingsUpdateToApp();
   }
 
   void onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) override {
@@ -215,7 +216,7 @@ void setupBLE() {
 
   /** 6. Start Advertising */
   NimBLEAdvertising* pAdvertising = NimBLEDevice::getAdvertising();
-  pAdvertising->setName("Accessory");
+  pAdvertising->setName("Smart Aquarium");
   pAdvertising->addServiceUUID(pService->getUUID());
   pAdvertising->enableScanResponse(true);
   pAdvertising->start();
@@ -231,13 +232,22 @@ void setup(void) {
 }
 int value;
 
+bool tempIsOk() {
+  if (aquarium.readings.water_temp < (aquarium.settings.targetTemp - aquarium.settings.temp_Warning_thres)
+      || aquarium.readings.water_temp > (aquarium.settings.targetTemp + aquarium.settings.temp_Warning_thres)) {
+    return false;
+  } else {
+    return true;
+  }
+}
+
 
 void sendReadingsUpdateToApp() {
   // String serialize(bool tds_isOk, bool temp_isOk, bool daysFed_isOk, bool waterLevel_isOk) {
 
   readingsChacteristic->setValue(aquarium.readings.serialize(
     aquarium.readings.tds_level < aquarium.settings.tds_Warning_thres ? true : false,
-    aquarium.readings.water_temp < aquarium.settings.temp_Warning_thres ? true : false,
+    tempIsOk(),
     aquarium.readings.daysSinceFed <= aquarium.settings.daysFed_Warning_thres ? true : false,
     aquarium.readings.waterLevel_isFull));
   readingsChacteristic->notify();
@@ -245,14 +255,20 @@ void sendReadingsUpdateToApp() {
 
 void loop() {
 
-  delay(2000);
   aquarium.update();  // for now randomly changes the reading, later make it actually read sensors.
 
   // Only notify if a client is connected
   if (pServer->getConnectedCount() > 0) {
 
-    if (readingsChacteristic) {
+    if (aquarium.sendReadingUpdateToApp) {  // sensors just got read. report to the app then clear the flag.
+      aquarium.sendReadingUpdateToApp = false;
       sendReadingsUpdateToApp();
     }
+
+
+
+    // if (readingsChacteristic) {
+    //   sendReadingsUpdateToApp();
+    // }
   }
 }

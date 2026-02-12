@@ -35,6 +35,10 @@ struct ConnectedMainMenuView: View {
                     Text("Aquarium")
                         .font(.title2).fontWeight(.semibold)
                         .foregroundStyle(.primary)
+                    
+                    
+                    
+                    
                     Spacer()
                     Button("", systemImage: "gear") {
                         presentSettings = true
@@ -46,10 +50,10 @@ struct ConnectedMainMenuView: View {
                 
                 
                 VStack(spacing: 12) {
-                    ReadingCard(title: "Water Temp", value: String(aquarium.water_temp), unit: "°C", symbol: "thermometer.medium")
+                    ReadingCard(title: "Water Temp", value: String(aquarium.water_temp), unit: "°F", symbol: "thermometer.medium")
                     ReadingCard(title: "TDS", value: String(aquarium.tds_level), unit: "ppm", symbol: "bubbles.and.sparkles.fill")
                     ReadingCard(title: "Days Since Fed", value: String(aquarium.daysSinceFed), unit: "days", symbol: "fish.fill")
-                    ReadingCard(title: "Water Level", value: String(aquarium.waterLevel_isFull ? "OK" : "LOW"), unit: "", symbol: "water.waves.and.arrow.trianglehead.up")
+                    ReadingCard(title: "Water Level", value: String(aquarium.waterLevel_isOk ? "OK" : "LOW"), unit: "", symbol: "water.waves.and.arrow.trianglehead.up")
                 }
                 .padding(.horizontal)
                 .padding(.top, 8)
@@ -58,15 +62,19 @@ struct ConnectedMainMenuView: View {
                 VStack{ // error reports.
                     
                     if !aquarium.tds_isOk {
+                        Divider()
                         WarningCard(title: "High TDS", message: "Total dissolved solids are above your threshold.")
                     }
                     if !aquarium.temp_isOk {
+                        Divider()
                         WarningCard(title: "Temperature Warning", message: "Water temperature is outside your target range.")
                     }
                     if !aquarium.daysFed_isOk {
+                        Divider()
                         WarningCard(title: "Feeding Reminder", message: "It has been too long since the last feeding.")
                     }
                     if !aquarium.waterLevel_isOk {
+                        Divider()
                         WarningCard(title: "Low Water Level", message: "Please top off the tank water level.")
                     }
                     
@@ -144,10 +152,10 @@ struct ConnectedMainMenuView: View {
                         HStack(alignment: .firstTextBaseline, spacing: 6) {
                             Text(value)
                                 .font(.system(size: 28, weight: .semibold, design: .rounded))
-                                .foregroundStyle(.green)
+                                .foregroundStyle(.white)
                             Text(unit)
                                 .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(.white)
                         }
                     }
                     Spacer()
@@ -171,7 +179,7 @@ struct ConnectedMainMenuView: View {
         var body: some View {
             ZStack {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color.red.opacity(0.12))
+                    .fill(Color.red.opacity(0.5))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
                             .stroke(Color.red.opacity(0.35), lineWidth: 1)

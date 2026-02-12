@@ -6,16 +6,17 @@
 
 
 struct Settings {
+
+  // set defaults here. TODO: restore them from nvs, and save them when changed.
   bool bubbler_isOn;
   bool lamp_isOn;
-  float temp_Warning_thres;
-  float targetTemp;
-  float tds_Warning_thres;
-  int daysFed_Warning_thres;
-
-  int r_LED;
-  int g_LED;
-  int b_LED;
+  float temp_Warning_thres = 3;
+  float targetTemp = 71;
+  float tds_Warning_thres = 500;
+  int daysFed_Warning_thres = 1;
+  int r_LED = 0;
+  int g_LED = 255;
+  int b_LED = 0;
 
   String serialize() {
     StaticJsonDocument<200> doc; 
@@ -39,6 +40,7 @@ struct Readings {
   float water_temp;
   int daysSinceFed;
   bool waterLevel_isFull;
+  bool isDark;
 
 
   String serialize(bool tds_isOk, bool temp_isOk, bool daysFed_isOk, bool waterLevel_isOk) {
@@ -50,6 +52,7 @@ struct Readings {
     doc["temp_isOk"] = temp_isOk;
     doc["daysFed_isOk"] = daysFed_isOk;
     doc["waterLevel_isOk"] = waterLevel_isOk;
+    doc["isDark"] = isDark;
     String output;
     serializeJson(doc, output);
     return output;
@@ -70,6 +73,7 @@ class SmartAquarium {
     // Public Data Access
     Settings settings;
     Readings readings;
+    bool sendReadingUpdateToApp; 
 
   private:
     // Hardware Pins
