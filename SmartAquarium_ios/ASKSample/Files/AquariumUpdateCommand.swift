@@ -12,9 +12,6 @@ func updateRGBCommand(r: Int, b: Int, g: Int) -> String {
     return "command: rgb, value1: \(r), value2: \(g), value3: \(b)"
 }
 
-
-
-
 func encodeTOJSON(any: Codable) -> Data {
     do {
         let encoder = JSONEncoder()
@@ -31,6 +28,12 @@ func encodeTOJSON(any: Codable) -> Data {
     }
     return Data()
 }
+
+enum LightCycle: Int, Codable {
+    case standard,
+         noSchedule
+}
+
 
 
 

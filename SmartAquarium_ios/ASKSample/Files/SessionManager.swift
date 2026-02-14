@@ -22,13 +22,23 @@ class DiceSessionManager: NSObject, ObservableObject {
     @Published var r_LED: Int = 0
     @Published var g_LED: Int = 0
     @Published var b_LED: Int = 0
+    @Published var brightness:  Float = 0.0
+    @Published var lightCycle: LightCycle = .standard
+    @Published var onTimeHr: Int = 0
+    @Published var onTimeMin: Int = 0
+    @Published var offTimeHr: Int = 0
+    @Published var offTimeMin: Int = 0
+     
+    
     // end of settings
 
     // mark: readings
     @Published var tds_level: Float = 0.0
     @Published var water_temp: Float = 0.0
     @Published var daysSinceFed: Int = 0
-    @Published var isDark: Bool = false
+    @Published var lights_isOn: Bool = false
+    @Published var turbidity: Float = 0.0
+    @Published var pH: Float = 0.0
     // warnings
     @Published var tds_isOk: Bool = true
     @Published var temp_isOk: Bool = true
@@ -318,7 +328,9 @@ extension DiceSessionManager: CBPeripheralDelegate {
             temp_isOk = decodedReadings.temp_isOk
             daysFed_isOk = decodedReadings.daysFed_isOk
             waterLevel_isOk = decodedReadings.waterLevel_isOk
-            isDark = decodedReadings.isDark
+            lights_isOn = decodedReadings.lights_isOn
+            turbidity = decodedReadings.turbidity
+            pH = decodedReadings.pH
         } catch {
             print("Failed to decode JSON: \(error)")
         }
@@ -338,6 +350,14 @@ extension DiceSessionManager: CBPeripheralDelegate {
             r_LED = decodedSettings.r
             g_LED = decodedSettings.g
             b_LED = decodedSettings.b
+            brightness = decodedSettings.brightness
+            lightCycle = decodedSettings.lightCycle
+            onTimeHr = decodedSettings.onTimeHr
+            onTimeMin = decodedSettings.onTimeMin
+            offTimeHr = decodedSettings.offTimeHr
+            offTimeMin = decodedSettings.offTimeMin
+            
+            print(lightCycle)
             
         } catch {
             print("Failed to decode JSON: \(error)")
@@ -356,6 +376,13 @@ struct ESPSettings: Codable {
     let r: Int
     let g: Int
     let b: Int
+    let brightness: Float
+    let lightCycle: LightCycle
+    let onTimeHr: Int
+    let onTimeMin: Int
+    let offTimeHr: Int
+    let offTimeMin: Int
+     
 }
 
 struct Readings: Codable {
@@ -366,6 +393,8 @@ struct Readings: Codable {
     let temp_isOk: Bool
     let daysFed_isOk: Bool
     let waterLevel_isOk: Bool
-    let isDark: Bool
+    let lights_isOn: Bool
+    let turbidity: Float
+    let pH: Float
 }
 

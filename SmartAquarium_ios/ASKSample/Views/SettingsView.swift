@@ -15,6 +15,8 @@ struct SettingsView: View {
     @EnvironmentObject var aquarium: DiceSessionManager
     @State var selectedTile = ColorTile(red: 255, green: 0, blue: 0)
     @State var togg: Bool = false
+    @State private var onTimeDate: Date = Date()
+    @State private var offTimeDate: Date = Date()
 
     var body: some View {
         
@@ -69,27 +71,109 @@ struct SettingsView: View {
                 .onChange(of: aquarium.lamp_isOn) { oldValue, newValue in
                     aquarium.updateAquariumSetting(command: "lamp", value: newValue ? "true" : "false")
                 }
-
-        }
-
-        VStack(alignment: .leading, spacing: 12) {
             
-            Picker("colorpicker", selection: $selectedTile) {
-                ForEach(ColorTiles) { tile in
-                    let color = Color(
-                        red: Double(tile.red),
-                        green: Double(tile.green),
-                        blue: Double(tile.blue)
-                    )
-                    Rectangle().frame(width: 50, height: 50)
-                        .foregroundColor(color)
-                        .padding(5)
-                        .tag(tile)
+            Section("On Time") {
+                DatePicker(
+                    "Time",
+                    selection: $onTimeDate,
+                    displayedComponents: .hourAndMinute
+                )
+                .datePickerStyle(.wheel)
+                .onAppear {
+                    var comps = DateComponents()
+                    comps.hour = aquarium.onTimeHr
+                    comps.minute = aquarium.onTimeMin
+                    onTimeDate = Calendar.current.date(from: comps) ?? Date()
+                }
+                .onChange(of: onTimeDate) { _, newValue in
+                    let comps = Calendar.current.dateComponents([.hour, .minute], from: newValue)
+                    let hr = comps.hour ?? 0
+                    let min = comps.minute ?? 0
+                    if aquarium.onTimeHr != hr {
+                        aquarium.onTimeHr = hr
+                        aquarium.updateAquariumSetting(command: "onTimeHr", value: String(hr))
+                    }
+                    if aquarium.onTimeMin != min {
+                        aquarium.onTimeMin = min
+                        aquarium.updateAquariumSetting(command: "onTimeMin", value: String(min))
+                    }
+                }
+                .onChange(of: aquarium.onTimeHr) { _, _ in
+                    var comps = DateComponents()
+                    comps.hour = aquarium.onTimeHr
+                    comps.minute = aquarium.onTimeMin
+                    onTimeDate = Calendar.current.date(from: comps) ?? onTimeDate
+                }
+                .onChange(of: aquarium.onTimeMin) { _, _ in
+                    var comps = DateComponents()
+                    comps.hour = aquarium.onTimeHr
+                    comps.minute = aquarium.onTimeMin
+                    onTimeDate = Calendar.current.date(from: comps) ?? onTimeDate
                 }
             }
-            .pickerStyle(.wheel)
+
+            Section("Off Time") {
+                DatePicker(
+                    "Time",
+                    selection: $offTimeDate,
+                    displayedComponents: .hourAndMinute
+                )
+                .datePickerStyle(.wheel)
+                .onAppear {
+                    var comps = DateComponents()
+                    comps.hour = aquarium.offTimeHr
+                    comps.minute = aquarium.offTimeMin
+                    offTimeDate = Calendar.current.date(from: comps) ?? Date()
+                }
+                .onChange(of: offTimeDate) { _, newValue in
+                    let comps = Calendar.current.dateComponents([.hour, .minute], from: newValue)
+                    let hr = comps.hour ?? 0
+                    let min = comps.minute ?? 0
+                    if aquarium.offTimeHr != hr {
+                        aquarium.offTimeHr = hr
+                        aquarium.updateAquariumSetting(command: "offTimeHr", value: String(hr))
+                    }
+                    if aquarium.offTimeMin != min {
+                        aquarium.offTimeMin = min
+                        aquarium.updateAquariumSetting(command: "offTimeMin", value: String(min))
+                    }
+                }
+                .onChange(of: aquarium.offTimeHr) { _, _ in
+                    var comps = DateComponents()
+                    comps.hour = aquarium.offTimeHr
+                    comps.minute = aquarium.offTimeMin
+                    offTimeDate = Calendar.current.date(from: comps) ?? offTimeDate
+                }
+                .onChange(of: aquarium.offTimeMin) { _, _ in
+                    var comps = DateComponents()
+                    comps.hour = aquarium.offTimeHr
+                    comps.minute = aquarium.offTimeMin
+                    offTimeDate = Calendar.current.date(from: comps) ?? offTimeDate
+                }
+            }
+            
+            VStack(alignment: .leading, spacing: 12) {
+                
+                Picker("colorpicker", selection: $selectedTile) {
+                    ForEach(ColorTiles) { tile in
+                        let color = Color(
+                            red: Double(tile.red),
+                            green: Double(tile.green),
+                            blue: Double(tile.blue)
+                        )
+                        Rectangle().frame(width: 50, height: 50)
+                            .foregroundColor(color)
+                            .padding(5)
+                            .tag(tile)
+                    }
+                }
+                .pickerStyle(.wheel)
+
+            }
 
         }
+
+  
         .onChange(of: selectedTile) { oldValue, newValue in
             redValue = selectedTile.redmapTo255()
             greenValue = selectedTile.greenmapTo255()
@@ -113,8 +197,17 @@ struct SettingsView: View {
         }
 
     }
+    
+    private static func format12Hour(hour: Int, minute: Int) -> String {
+        let h = hour % 24
+        let m = max(0, min(59, minute))
+        let ampm = h < 12 ? "AM" : "PM"
+        let hour12 = h % 12 == 0 ? 12 : h % 12
+        return String(format: "%d:%02d %@", hour12, m, ampm)
+    }
 }
 
 #Preview {
     SettingsView()
 }
+
