@@ -4,8 +4,14 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <Adafruit_NeoPixel.h>
+#include <WiFi.h>
+#include <Preferences.h> // Include Preferences Library
 
-
+enum class WifiStatus : int {
+  connecting = 0,
+  connected = 1,
+  wifiError = 2,
+};
 
 enum class LightCycle : int {
   standard = 0,
@@ -20,8 +26,6 @@ struct RGB {
 };
 
 struct Settings {
-
-  // set defaults here. TODO: restore them from nvs, and save them when changed.
   bool bubbler_isOn;
   bool lamp_isOn = true;
   float temp_Warning_thres = 3;
@@ -37,28 +41,8 @@ struct Settings {
   int onTimeMin = 0;
   int offTimeHr = 24;
   int offTimeMin = 0;
-
-  String serialize() {
-    StaticJsonDocument<400> doc;
-    doc["bubbler"] = bubbler_isOn;
-    doc["lamp"] = lamp_isOn;
-    doc["temp_Warning_thres"] = temp_Warning_thres;
-    doc["targetTemp"] = targetTemp;
-    doc["tds_Warning_thres"] = tds_Warning_thres;
-    doc["daysFed_Warning_thres"] = daysFed_Warning_thres;
-    doc["r"] = r_LED;
-    doc["g"] = g_LED;
-    doc["b"] = b_LED;
-    doc["brightness"] = brightness;
-    doc["lightCycle"] = (int)lightCycle;
-    doc["onTimeHr"] = onTimeHr;
-    doc["onTimeMin"] = onTimeMin;
-    doc["offTimeHr"] = offTimeHr;
-    doc["offTimeMin"] = offTimeMin;
-    String output;
-    serializeJson(doc, output);
-    return output;
-  }
+  String ssid = "";
+  String password = "";
 };
 
 struct Readings {
@@ -69,50 +53,46 @@ struct Readings {
   bool lights_isOn;
   float turbidity;
   float pH;
-
-  String serialize(bool tds_isOk, bool temp_isOk, bool daysFed_isOk, bool waterLevel_isOk) {
-    StaticJsonDocument<400> doc;
-    doc["tds"] = serialized(String(tds_level, 2));
-    doc["temp"] = serialized(String(water_temp, 2));
-    doc["fed"] = daysSinceFed;
-    doc["tds_isOk"] = tds_isOk;
-    doc["temp_isOk"] = temp_isOk;
-    doc["daysFed_isOk"] = daysFed_isOk;
-    doc["waterLevel_isOk"] = waterLevel_isOk;
-    doc["lights_isOn"] = lights_isOn;
-    doc["turbidity"] = turbidity;
-    doc["pH"] = pH;
-    String output;
-    serializeJson(doc, output);
-    return output;
-  }
+  WifiStatus status = WifiStatus::connecting;
 };
 
-
-
 class SmartAquarium {
+
 public:
-
-
-  RGB standardLightCycle(int currentHour, int currentMin, int userOnHour, int userOnMin, int userOffHour, int userOffMin, bool testMode);
-    // Constructor
-    SmartAquarium(int pumpPin, int lightPin);
-
-  // Core Methods
+  SmartAquarium(int pumpPin, int lightPin);
+  String serializeSettings();
+  String serializeReadings();
+  RGB standardLightCycle(bool testMode = false, int testHr = 0, int testMin = 0);
   void begin();
   void update();
-
-  // Public Data Access
   Settings settings;
   Readings readings;
   bool sendReadingUpdateToApp;
+  bool connectToInternetSuccessful();
+  
+  // NVS Methods
+  void restoreSettings();
+  void saveInt(const char* key, int value);
+  void saveFloat(const char* key, float value);
+  void saveBool(const char* key, bool value);
+  void saveString(const char* key, String value);
 
 private:
-  // Hardware Pins
+  Preferences preferences; // Create Preferences object
+  
+  bool tempIsOk();
+  void updateTime();
+  const char* ntpServer = "pool.ntp.org";
+  const long gmtOffset_sec = -18000;  // timezone offset.
+  const int daylightOffset_sec = 3600;
+  unsigned long lastTimeUpdate;
+  int milMin;
+  int milHour;
+
+  // hardware pins
   int _pumpPin;
   int _lightPin;
 
-  // Internal Logic
   void readSensors();
   void applyHardwareState();
 };

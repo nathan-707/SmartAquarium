@@ -34,6 +34,10 @@ enum LightCycle: Int, Codable {
          noSchedule
 }
 
+enum WifiStatus: Int, Codable {
+    case connecting, connected, wifiError
+}
+
 
 
 

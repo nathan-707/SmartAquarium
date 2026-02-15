@@ -15,14 +15,30 @@ struct ContentView: View {
         if aquarium.pickerDismissed, let accessory = aquarium.accessory,
             aquarium.peripheralConnected
         {
-            ConnectedMainMenuView()
+            
+            
+            if aquarium.status == .connected {
+                ConnectedMainMenuView()
+                    .preferredColorScheme(.dark)
+
+            } else {
+                setupWifiView()
+                    .preferredColorScheme(.dark)
+
+            }
+            
+
+            
 
         } else if aquarium.pickerDismissed, let accessory = aquarium.accessory,
             !aquarium.peripheralConnected
         {
             SearchingView()
+                .preferredColorScheme(.dark)
+
         } else {
             makeSetupView
+            
         }
 
     }

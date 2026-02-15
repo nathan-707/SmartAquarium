@@ -24,10 +24,13 @@ class DiceSessionManager: NSObject, ObservableObject {
     @Published var b_LED: Int = 0
     @Published var brightness:  Float = 0.0
     @Published var lightCycle: LightCycle = .standard
+    @Published var status: WifiStatus = .connected
     @Published var onTimeHr: Int = 0
     @Published var onTimeMin: Int = 0
     @Published var offTimeHr: Int = 0
     @Published var offTimeMin: Int = 0
+    @Published var ssid: String = ""
+    @Published var password: String = ""
      
     
     // end of settings
@@ -331,6 +334,8 @@ extension DiceSessionManager: CBPeripheralDelegate {
             lights_isOn = decodedReadings.lights_isOn
             turbidity = decodedReadings.turbidity
             pH = decodedReadings.pH
+            status = decodedReadings.status
+            print(status)
         } catch {
             print("Failed to decode JSON: \(error)")
         }
@@ -356,6 +361,9 @@ extension DiceSessionManager: CBPeripheralDelegate {
             onTimeMin = decodedSettings.onTimeMin
             offTimeHr = decodedSettings.offTimeHr
             offTimeMin = decodedSettings.offTimeMin
+            ssid = decodedSettings.ssid
+            password = decodedSettings.password
+            
             
             print(lightCycle)
             
@@ -382,6 +390,8 @@ struct ESPSettings: Codable {
     let onTimeMin: Int
     let offTimeHr: Int
     let offTimeMin: Int
+    let ssid: String
+    let password: String
      
 }
 
@@ -396,5 +406,6 @@ struct Readings: Codable {
     let lights_isOn: Bool
     let turbidity: Float
     let pH: Float
+    let status: WifiStatus
 }
 

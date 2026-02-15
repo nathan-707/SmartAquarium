@@ -1,43 +1,25 @@
 #include <Arduino.h>
 #include <NimBLEDevice.h>
-#include <ArduinoJson.h>
 #include <Adafruit_NeoPixel.h>
 #include "SmartAquarium.h"
-#include <WiFi.h>
-#include "time.h"
-
-// --- WIFI CREDENTIALS ---
-const char* ssid = "Province.SynergyWifi.com";
-const char* password = "coldfang75";
-
-
-
-// --- NTP SERVER SETTINGS ---
-const char* ntpServer = "pool.ntp.org";
-const long gmtOffset_sec = -18000;    // timezone offset.
-const int daylightOffset_sec = 3600;  
-
-// Global Time Variables
-int milHour = 0;
-int milMin = 0;
-
-// Timer for updates
-unsigned long lastTimeUpdate = 0;
-
 
 #define pumpPin 0
 #define lightPin 0
-
-SmartAquarium aquarium(pumpPin, lightPin);
 #define PIN 38
 #define NUMPIXELS 1
+// TODO:: add code for api inside smartAquarium.h and smartAquarium.cpp to sync to website
+// TODO:: add code inside smartAquarium.h and smartAquarium.cpp to sync to read sensors and set actual readings to the sensors
+// TODO:: use preferences lib to store settings and wifi ssid and password across boots.
+
+SmartAquarium aquarium(pumpPin, lightPin);
+bool testing = false;
+
+
 /////////////////////////////////// mark bluetooth ///////////////////////////////////////////////////
 #define SERVICE_UUID "E56A082E-C49B-47CA-A2AB-389127B8ABE7"
 #define CHARACTERISTIC_UUID "FF3F"
-
 #define CHARACTERISTIC_UUID_IOS "BB3B"
 #define CHARACTERISTIC_UUID_READINGS "CC3C"
-
 
 static NimBLEServer* pServer;
 NimBLECharacteristic* pCharacteristic;
@@ -45,12 +27,8 @@ NimBLECharacteristic* appCommandChacteristic;
 NimBLECharacteristic* readingsChacteristic;
 Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_RGB + NEO_KHZ800);
 
-volatile bool updateLights = true;
-bool testing = false;
-
-
 void pingSettingsToApp() {
-  pCharacteristic->setValue(aquarium.settings.serialize());
+  pCharacteristic->setValue(aquarium.serializeSettings());
   pCharacteristic->notify();
 }
 
@@ -71,17 +49,12 @@ class ServerCallbacks : public NimBLEServerCallbacks {
   }
 } serverCallbacks;
 
-
 class IosCommandCallbacks : public NimBLECharacteristicCallbacks {
   void onRead(NimBLECharacteristic* iosCommandCallbacks, NimBLEConnInfo& connInfo) override {
-    Serial.printf("Read request on: %s\n", iosCommandCallbacks->getUUID().toString().c_str());
   }
-
   void onWrite(NimBLECharacteristic* iosCommandCallbacks, NimBLEConnInfo& connInfo) override {
-
     String payload = iosCommandCallbacks->getValue().c_str();
-    // Stream& input;
-    StaticJsonDocument<128> doc;
+    StaticJsonDocument<256> doc;  // Increased size slightly
     DeserializationError error = deserializeJson(doc, payload);
     if (error) {
       Serial.print("deserializeJson() failed: ");
@@ -89,284 +62,167 @@ class IosCommandCallbacks : public NimBLECharacteristicCallbacks {
       return;
     }
     const char* command = doc["command"];
-    const char* value2 = doc["value2"];
-    const char* value = doc["value"];
-    const char* value3 = doc["value3"];
+    const char* value_str = doc["value"];  // Used for string comparisons
 
-
-    if (strcmp(command, "RGB") == 0) {  // rgb update.
+    if (strcmp(command, "RGB") == 0) {
       aquarium.settings.r_LED = int(doc["value"]);
       aquarium.settings.g_LED = int(doc["value2"]);
       aquarium.settings.b_LED = int(doc["value3"]);
-      updateLights = true;
 
-    } else if (strcmp(command, "bubbler") == 0) {  // bubbler toggled.
+      // Save changes to NVS
+      aquarium.saveInt("r_led", aquarium.settings.r_LED);
+      aquarium.saveInt("g_led", aquarium.settings.g_LED);
+      aquarium.saveInt("b_led", aquarium.settings.b_LED);
 
-      if (strcmp(value, "true") == 0) {
-        aquarium.settings.bubbler_isOn = true;
-      } else {
-        aquarium.settings.bubbler_isOn = false;
-      }
+      Serial.printf("RGB Set: %d, %d, %d\n", aquarium.settings.r_LED, aquarium.settings.g_LED, aquarium.settings.b_LED);
 
-      if (aquarium.settings.bubbler_isOn) {
-        Serial.println("Bubbler on!");
-      } else {
-        Serial.println("Bubbler off!");
-      }
-    }
+    } else if (strcmp(command, "bubbler") == 0) {
+      bool isOn = (strcmp(value_str, "true") == 0);
+      aquarium.settings.bubbler_isOn = isOn;
+      aquarium.saveBool("bubbler", isOn);  // Save
+      Serial.println(isOn ? "Bubbler on!" : "Bubbler off!");
 
-    else if (strcmp(command, "temp_Warning_thres") == 0) {  // temp_Warning_thres
+    } else if (strcmp(command, "temp_Warning_thres") == 0) {
       aquarium.settings.temp_Warning_thres = doc["value"];
-      Serial.print("temp_Warning_thres: ");
+      aquarium.saveFloat("temp_warn", aquarium.settings.temp_Warning_thres);  // Save
       Serial.println(aquarium.settings.temp_Warning_thres);
-    }
 
-    else if (strcmp(command, "targetTemp") == 0) {  // targetTemp
+    } else if (strcmp(command, "targetTemp") == 0) {
       aquarium.settings.targetTemp = doc["value"];
-      Serial.print("targetTemp: ");
+      aquarium.saveFloat("target_temp", aquarium.settings.targetTemp);  // Save
       Serial.println(aquarium.settings.targetTemp);
-    }
 
-    else if (strcmp(command, "tds_Warning_thres") == 0) {  // tds_Warning_thres
+    } else if (strcmp(command, "tds_Warning_thres") == 0) {
       aquarium.settings.tds_Warning_thres = doc["value"];
-      Serial.print("tds_Warning_thres: ");
+      aquarium.saveFloat("tds_warn", aquarium.settings.tds_Warning_thres);  // Save
       Serial.println(aquarium.settings.tds_Warning_thres);
-    }
 
-    else if (strcmp(command, "daysFed_Warning_thres") == 0) {  // daysFed_Warning_thres
+    } else if (strcmp(command, "daysFed_Warning_thres") == 0) {
       aquarium.settings.daysFed_Warning_thres = doc["value"];
-      Serial.print("daysFed_Warning_thres: ");
+      aquarium.saveInt("fed_warn", aquarium.settings.daysFed_Warning_thres);  // Save
       Serial.println(aquarium.settings.daysFed_Warning_thres);
-    }
 
-    else if (strcmp(command, "lamp") == 0) {  // lamp
-      if (strcmp(value, "true") == 0) {
-        aquarium.settings.lamp_isOn = true;
-      } else {
-        aquarium.settings.lamp_isOn = false;
-      }
+    } else if (strcmp(command, "lamp") == 0) {
+      bool isOn = (strcmp(value_str, "true") == 0);
+      aquarium.settings.lamp_isOn = isOn;
+      aquarium.saveBool("lamp", isOn);  // Save
+      Serial.println(isOn ? "Lamp On." : "Lamp Off.");
 
-      if (aquarium.settings.lamp_isOn) {
-        Serial.println("Lamp On.");
-      } else {
-        Serial.println("Lamp Off.");
-      }
-      updateLights = true;
-    }
-
-    else if (strcmp(command, "brightness") == 0) {  // brightness
+    } else if (strcmp(command, "brightness") == 0) {
       aquarium.settings.brightness = doc["value"];
-      updateLights = true;
-      Serial.print("Brightness set to: ");
+      aquarium.saveFloat("bright", aquarium.settings.brightness);  // Save
       Serial.println(aquarium.settings.brightness);
-    }
 
-    else if (strcmp(command, "lightCycle") == 0) {  // lightCycle (Enum)
-      // Cast the integer value from JSON back to the LightCycle Enum
+    } else if (strcmp(command, "lightCycle") == 0) {
       int cycleIndex = doc["value"];
       aquarium.settings.lightCycle = static_cast<LightCycle>(cycleIndex);
-      updateLights = true;
-      Serial.print("Light Cycle set to mode: ");
-      Serial.println(cycleIndex);
-    }
+      aquarium.saveInt("cycle", cycleIndex);  // Save
+      Serial.printf("Light Cycle set to mode: %d\n", cycleIndex);
 
-    else if (strcmp(command, "onTimeHr") == 0) {  // onTimeHr
+    } else if (strcmp(command, "onTimeHr") == 0) {
       aquarium.settings.onTimeHr = doc["value"];
-      updateLights = true;  // Time change requires re-check of light state
-      Serial.print("On Time Hour: ");
+      aquarium.saveInt("on_h", aquarium.settings.onTimeHr);  // Save
       Serial.println(aquarium.settings.onTimeHr);
-    }
 
-    else if (strcmp(command, "onTimeMin") == 0) {  // onTimeMin
+    } else if (strcmp(command, "onTimeMin") == 0) {
       aquarium.settings.onTimeMin = doc["value"];
-      updateLights = true;
-      Serial.print("On Time Min: ");
+      aquarium.saveInt("on_m", aquarium.settings.onTimeMin);  // Save
       Serial.println(aquarium.settings.onTimeMin);
-    }
 
-    else if (strcmp(command, "offTimeHr") == 0) {  // offTimeHr
+    } else if (strcmp(command, "offTimeHr") == 0) {
       aquarium.settings.offTimeHr = doc["value"];
-      updateLights = true;
-      Serial.print("Off Time Hour: ");
+      aquarium.saveInt("off_h", aquarium.settings.offTimeHr);  // Save
       Serial.println(aquarium.settings.offTimeHr);
-    }
 
-    else if (strcmp(command, "offTimeMin") == 0) {  // offTimeMin
+    } else if (strcmp(command, "offTimeMin") == 0) {
       aquarium.settings.offTimeMin = doc["value"];
-      updateLights = true;
-      Serial.print("Off Time Min: ");
+      aquarium.saveInt("off_m", aquarium.settings.offTimeMin);  // Save
       Serial.println(aquarium.settings.offTimeMin);
+
+    } else if (strcmp(command, "ssid") == 0) {
+      aquarium.settings.ssid = doc["value"].as<String>();
+      aquarium.saveString("ssid", aquarium.settings.ssid); // Save
+      Serial.println("SSID Updated");
+
+    } else if (strcmp(command, "password") == 0) {
+      aquarium.settings.password = doc["value"].as<String>();
+      aquarium.saveString("pass", aquarium.settings.password); // Save
+      Serial.println("Password Updated");
     }
-
-
-
-    // else if ... other commands to read.
   }
-
 } iosCommandCallbacks;
-
-
 class ReadingCommandCallbacks : public NimBLECharacteristicCallbacks {
-
   void onRead(NimBLECharacteristic* readingCommandCallbacks, NimBLEConnInfo& connInfo) override {
-    Serial.printf("Read request on: %s\n", readingCommandCallbacks->getUUID().toString().c_str());
   }
-
   void onWrite(NimBLECharacteristic* readingCommandCallbacks, NimBLEConnInfo& connInfo) override {
   }
-
 } readingCommandCallbacks;
 
 
 /** Characteristic Callbacks */
 class CharacteristicCallbacks : public NimBLECharacteristicCallbacks {
-
   void onRead(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override {
-    Serial.printf("Read request on: %s\n", pCharacteristic->getUUID().toString().c_str());
     pingSettingsToApp();
   }
-
   void onWrite(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override {
     pingSettingsToApp();
   }
-
 } chrCallbacks;
 
 void setupBLE() {
   Serial.println("Starting NimBLE Server...");
-
-  /** 1. Initialize NimBLE */
   NimBLEDevice::init("NimBLE-Server");
-
-  /** 2. Create Server */
   pServer = NimBLEDevice::createServer();
   pServer->setCallbacks(&serverCallbacks);
-
-  /** 3. Create the Service */
   NimBLEService* pService = pServer->createService(SERVICE_UUID);
-
-  /** 4. Create the Characteristic (FF3F) & Assign to GLOBAL variable */
-  // We assign the result to 'pCharacteristic' which is declared at the top of the file
   pCharacteristic = pService->createCharacteristic(
     CHARACTERISTIC_UUID,
     NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::NOTIFY);
   pCharacteristic->setValue("1");
   pCharacteristic->setCallbacks(&chrCallbacks);
-
-
   appCommandChacteristic = pService->createCharacteristic(
     CHARACTERISTIC_UUID_IOS,
     NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::NOTIFY);
   appCommandChacteristic->setCallbacks(&iosCommandCallbacks);
-
-
   readingsChacteristic = pService->createCharacteristic(
     CHARACTERISTIC_UUID_READINGS,
     NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::NOTIFY);
   readingsChacteristic->setCallbacks(&readingCommandCallbacks);
 
-  /** 5. Start the Service */
   pService->start();
 
-  /** 6. Start Advertising */
   NimBLEAdvertising* pAdvertising = NimBLEDevice::getAdvertising();
   pAdvertising->setName("Smart Aquarium");
   pAdvertising->addServiceUUID(pService->getUUID());
   pAdvertising->enableScanResponse(true);
   pAdvertising->start();
-
   Serial.println("Advertising Started");
 }
 //////////////////////////////////// end of bluetooth ////////////////////////////////////////////////////
 
 
-void updateLocalTime() {
-  struct tm timeinfo;
-  if (!getLocalTime(&timeinfo)) {
-    Serial.println("Failed to obtain time");
-    return;
-  }
-
-  milHour = timeinfo.tm_hour;
-  milMin = timeinfo.tm_min;
-
-  Serial.printf("Time Updated: %02d:%02d\n", milHour, milMin);
-}
-
-
-
 void setup() {
   Serial.begin(9600);
-
-  // 1. CONNECT TO INTERNET
-  Serial.print("Connecting to WiFi");
-  WiFi.begin(ssid, password);
-
-  // Wait for connection with a simple timeout/loading animation
-  int retryCount = 0;
-  while (WiFi.status() != WL_CONNECTED && retryCount < 20) {
-    delay(500);
-    Serial.print(".");
-    retryCount++;
-  }
-
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("\nConnected to WiFi!");
-    Serial.print("IP Address: ");
-    Serial.println(WiFi.localIP());
-
-    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-    updateLocalTime();  // Force an immediate update so milHour/milMin are set right now
-  } else {
-    Serial.println("\nFailed to connect to WiFi. Running offline mode.");
-  }
-
-  // TODO:: add code for api inside smartAquarium.h and smartAquarium.cpp to sync to website
-  // TODO:: add code inside smartAquarium.h and smartAquarium.cpp to sync to read sensors and set actual readings to the sensors
-
-  pixels.begin();
   setupBLE();
-}
+  pixels.begin();
+  aquarium.restoreSettings();
+  bool connected = aquarium.connectToInternetSuccessful();
+  sendReadingsUpdateToApp();  // send update to app to tell it aquarium is connecting before starting.
 
-
-
-
-int value;
-
-bool tempIsOk() {
-  if (aquarium.readings.water_temp < (aquarium.settings.targetTemp - aquarium.settings.temp_Warning_thres)
-      || aquarium.readings.water_temp > (aquarium.settings.targetTemp + aquarium.settings.temp_Warning_thres)) {
-    return false;
-  } else {
-    return true;
+  while (connected == false) {
+    connected = aquarium.connectToInternetSuccessful();
+    sendReadingsUpdateToApp();  // send update to app to tell it aquarium is connecting before starting.
   }
-}
 
+  aquarium.begin();
+}
 
 void sendReadingsUpdateToApp() {
-  // String serialize(bool tds_isOk, bool temp_isOk, bool daysFed_isOk, bool waterLevel_isOk) {
-
-  readingsChacteristic->setValue(aquarium.readings.serialize(
-    aquarium.readings.tds_level < aquarium.settings.tds_Warning_thres ? true : false,
-    tempIsOk(),
-    aquarium.readings.daysSinceFed <= aquarium.settings.daysFed_Warning_thres ? true : false,
-    aquarium.readings.waterLevel_isFull));
+  readingsChacteristic->setValue(aquarium.serializeReadings());
   readingsChacteristic->notify();
 }
 
-// Assuming you are using NeoPixel or a similar RGB library
-// #include <Adafruit_NeoPixel.h>
-
-// Assumes you have: #include <Adafruit_NeoPixel.h>
-// Assumes 'pixels' is globally defined
-
-
-
-
 void runTestCycle() {
-
-
-
   Serial.println("\n--- STARTING 24H TURBO TEST ---");
   Serial.printf("Schedule: ON %02d:%02d | OFF %02d:%02d\n", aquarium.settings.onTimeHr, aquarium.settings.onTimeMin, aquarium.settings.offTimeHr, aquarium.settings.offTimeMin);
   Serial.println("TIME      | R   G   B");
@@ -374,26 +230,18 @@ void runTestCycle() {
 
   // Loop through every minute of the day (0 to 1439)
   for (int i = 0; i < 1440; i++) {
-
     // 1. Calculate Time
     int simHour = i / 60;
     int simMin = i % 60;
 
     // 2. Run the Cycle Logic (Force update with testMode = true)
-    // Ensure you updated standardLightCycle to accept the 'true' argument!
-
-
-
-
-    RGB result = aquarium.standardLightCycle(simHour, simMin, aquarium.settings.onTimeHr, aquarium.settings.onTimeMin, aquarium.settings.offTimeHr, aquarium.settings.offTimeMin, true);
-
+    RGB result = aquarium.standardLightCycle(true, simHour, simMin);
     if (result.update) {
       pixels.setPixelColor(0, pixels.Color(result.green, result.red, result.blue));
       pixels.show();
     }
 
     // 3. Retrieve the color explicitly from the hardware/library buffer
-    // This lets us see exactly what the function decided to do
     uint32_t packedColor = pixels.getPixelColor(0);
     uint8_t r = (packedColor >> 16) & 0xFF;
     uint8_t g = (packedColor >> 8) & 0xFF;
@@ -404,67 +252,43 @@ void runTestCycle() {
     int displayHour = simHour % 12;
     if (displayHour == 0) displayHour = 12;  // Handle Midnight/Noon
 
-    // Print: "10:30 AM | 255 120 0"
-    // %2d ensures single digit hours align nicely
     Serial.printf("%2d:%02d %s | %3d %3d %3d\n", displayHour, simMin, amPm.c_str(), r, g, b);
-
-    // Speed Control (Total test time ~28 seconds)
+    // Speed Control
     delay(40);
   }
-
   Serial.println("-------------------------");
   Serial.println("--- TEST COMPLETE ---");
 }
 
 void managePixels() {
+  if (aquarium.settings.lamp_isOn == false) {  // turn
+    pixels.setPixelColor(0, 0, 0, 0);
+    pixels.show();
+    return;
+  }
 
-  if (updateLights) {
-    updateLights = false;
+  // lights are not off. follow current light cycle setting.
+  if (aquarium.settings.lightCycle == LightCycle::standard) {
 
-    if (aquarium.settings.lamp_isOn == false) {  // turn
-      pixels.setPixelColor(0, 0, 0, 0);
-      pixels.show();
-      return;
-    }
+    if (testing) {
+      runTestCycle();
+    } else {
 
-    // lights are not off. follow current light cycle setting.
-    if (aquarium.settings.lightCycle == LightCycle::standard) {
+      RGB result = aquarium.standardLightCycle();
 
-      if (testing) {
-        runTestCycle();
-      } else {
-
-
-
-        RGB result = aquarium.standardLightCycle(milHour, milMin, aquarium.settings.onTimeHr, aquarium.settings.onTimeMin, aquarium.settings.offTimeHr, aquarium.settings.offTimeMin, true);
-
-        if (result.update) {
-          pixels.setPixelColor(0, pixels.Color(result.green, result.red, result.blue));
-          pixels.show();
-        }
+      if (result.update) {
+        pixels.setPixelColor(0, pixels.Color(result.green, result.red, result.blue));
+        pixels.show();
       }
-
-
-    } else if (aquarium.settings.lightCycle == LightCycle::noSchedule) {
-      pixels.setPixelColor(0, pixels.Color(aquarium.settings.g_LED, aquarium.settings.r_LED, aquarium.settings.b_LED));
-      pixels.show();
     }
+
+  } else if (aquarium.settings.lightCycle == LightCycle::noSchedule) {
+    pixels.setPixelColor(0, pixels.Color(aquarium.settings.g_LED, aquarium.settings.r_LED, aquarium.settings.b_LED));
+    pixels.show();
   }
 }
 
 void loop() {
-
-  if (millis() - lastTimeUpdate > 30000) {  // 30,000ms = 30 seconds
-    updateLocalTime();
-    lastTimeUpdate = millis();
-
-    // Check WiFi connection and reconnect if lost
-    if (WiFi.status() != WL_CONNECTED) {
-      WiFi.reconnect();
-    }
-  }
-
-
   managePixels();
   aquarium.update();  // for now randomly changes the reading, later make it actually read sensors.
 

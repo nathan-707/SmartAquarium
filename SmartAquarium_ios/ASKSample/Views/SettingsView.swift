@@ -17,21 +17,33 @@ struct SettingsView: View {
     @State var togg: Bool = false
     @State private var onTimeDate: Date = Date()
     @State private var offTimeDate: Date = Date()
+    @State var showChangeWifi = false
 
     var body: some View {
         
+
+
         Form {
+        
             Toggle("Bubbler", isOn: $aquarium.bubbler_isOn)
             
             Stepper(value: $aquarium.temp_Warning_thres, in: 0...120, step: 1) {
                 HStack {
                     Text("Temp Warning Threshold")
                     Spacer()
-                    Text(String(format: "%.2f", Double(aquarium.temp_Warning_thres)))
+                    Text(
+                        String(
+                            format: "%.2f",
+                            Double(aquarium.temp_Warning_thres)
+                        )
+                    )
                 }
             }
             .onChange(of: aquarium.temp_Warning_thres) { oldValue, newValue in
-                aquarium.updateAquariumSetting(command: "temp_Warning_thres", value: String(newValue))
+                aquarium.updateAquariumSetting(
+                    command: "temp_Warning_thres",
+                    value: String(newValue)
+                )
             }
             
             Stepper(value: $aquarium.targetTemp, in: 0...120, step: 1) {
@@ -42,34 +54,60 @@ struct SettingsView: View {
                 }
             }
             .onChange(of: aquarium.targetTemp) { oldValue, newValue in
-                aquarium.updateAquariumSetting(command: "targetTemp", value: String(newValue))
+                aquarium.updateAquariumSetting(
+                    command: "targetTemp",
+                    value: String(newValue)
+                )
             }
             
-            Stepper(value: $aquarium.tds_Warning_thres, in: 0...2000, step: 10) {
+            Stepper(value: $aquarium.tds_Warning_thres, in: 0...2000, step: 10)
+            {
                 HStack {
                     Text("TDS Warning Threshold")
                     Spacer()
-                    Text(String(format: "%.2f", Double(aquarium.tds_Warning_thres)))
+                    Text(
+                        String(
+                            format: "%.2f",
+                            Double(aquarium.tds_Warning_thres)
+                        )
+                    )
                 }
             }
             .onChange(of: aquarium.tds_Warning_thres) { oldValue, newValue in
-                aquarium.updateAquariumSetting(command: "tds_Warning_thres", value: String(newValue))
+                aquarium.updateAquariumSetting(
+                    command: "tds_Warning_thres",
+                    value: String(newValue)
+                )
             }
             
-            Stepper(value: $aquarium.daysFed_Warning_thres, in: 0...30, step: 1) {
+            Stepper(value: $aquarium.daysFed_Warning_thres, in: 0...30, step: 1)
+            {
                 HStack {
                     Text("Days Fed Warning Threshold")
                     Spacer()
-                    Text(String(format: "%.2f", Double(aquarium.daysFed_Warning_thres)))
+                    Text(
+                        String(
+                            format: "%.2f",
+                            Double(aquarium.daysFed_Warning_thres)
+                        )
+                    )
                 }
             }
-            .onChange(of: aquarium.daysFed_Warning_thres) { oldValue, newValue in
-                aquarium.updateAquariumSetting(command: "daysFed_Warning_thres", value: String(newValue))
+            .onChange(of: aquarium.daysFed_Warning_thres) {
+                oldValue,
+                newValue in
+                aquarium.updateAquariumSetting(
+                    command: "daysFed_Warning_thres",
+                    value: String(newValue)
+                )
             }
             
             Toggle("Lamp", isOn: $aquarium.lamp_isOn)
                 .onChange(of: aquarium.lamp_isOn) { oldValue, newValue in
-                    aquarium.updateAquariumSetting(command: "lamp", value: newValue ? "true" : "false")
+                    aquarium.updateAquariumSetting(
+                        command: "lamp",
+                        value: newValue ? "true" : "false"
+                    )
                 }
             
             Section("On Time") {
@@ -86,32 +124,43 @@ struct SettingsView: View {
                     onTimeDate = Calendar.current.date(from: comps) ?? Date()
                 }
                 .onChange(of: onTimeDate) { _, newValue in
-                    let comps = Calendar.current.dateComponents([.hour, .minute], from: newValue)
+                    let comps = Calendar.current.dateComponents(
+                        [.hour, .minute],
+                        from: newValue
+                    )
                     let hr = comps.hour ?? 0
                     let min = comps.minute ?? 0
                     if aquarium.onTimeHr != hr {
                         aquarium.onTimeHr = hr
-                        aquarium.updateAquariumSetting(command: "onTimeHr", value: String(hr))
+                        aquarium.updateAquariumSetting(
+                            command: "onTimeHr",
+                            value: String(hr)
+                        )
                     }
                     if aquarium.onTimeMin != min {
                         aquarium.onTimeMin = min
-                        aquarium.updateAquariumSetting(command: "onTimeMin", value: String(min))
+                        aquarium.updateAquariumSetting(
+                            command: "onTimeMin",
+                            value: String(min)
+                        )
                     }
                 }
                 .onChange(of: aquarium.onTimeHr) { _, _ in
                     var comps = DateComponents()
                     comps.hour = aquarium.onTimeHr
                     comps.minute = aquarium.onTimeMin
-                    onTimeDate = Calendar.current.date(from: comps) ?? onTimeDate
+                    onTimeDate =
+                    Calendar.current.date(from: comps) ?? onTimeDate
                 }
                 .onChange(of: aquarium.onTimeMin) { _, _ in
                     var comps = DateComponents()
                     comps.hour = aquarium.onTimeHr
                     comps.minute = aquarium.onTimeMin
-                    onTimeDate = Calendar.current.date(from: comps) ?? onTimeDate
+                    onTimeDate =
+                    Calendar.current.date(from: comps) ?? onTimeDate
                 }
             }
-
+            
             Section("Off Time") {
                 DatePicker(
                     "Time",
@@ -126,29 +175,40 @@ struct SettingsView: View {
                     offTimeDate = Calendar.current.date(from: comps) ?? Date()
                 }
                 .onChange(of: offTimeDate) { _, newValue in
-                    let comps = Calendar.current.dateComponents([.hour, .minute], from: newValue)
+                    let comps = Calendar.current.dateComponents(
+                        [.hour, .minute],
+                        from: newValue
+                    )
                     let hr = comps.hour ?? 0
                     let min = comps.minute ?? 0
                     if aquarium.offTimeHr != hr {
                         aquarium.offTimeHr = hr
-                        aquarium.updateAquariumSetting(command: "offTimeHr", value: String(hr))
+                        aquarium.updateAquariumSetting(
+                            command: "offTimeHr",
+                            value: String(hr)
+                        )
                     }
                     if aquarium.offTimeMin != min {
                         aquarium.offTimeMin = min
-                        aquarium.updateAquariumSetting(command: "offTimeMin", value: String(min))
+                        aquarium.updateAquariumSetting(
+                            command: "offTimeMin",
+                            value: String(min)
+                        )
                     }
                 }
                 .onChange(of: aquarium.offTimeHr) { _, _ in
                     var comps = DateComponents()
                     comps.hour = aquarium.offTimeHr
                     comps.minute = aquarium.offTimeMin
-                    offTimeDate = Calendar.current.date(from: comps) ?? offTimeDate
+                    offTimeDate =
+                    Calendar.current.date(from: comps) ?? offTimeDate
                 }
                 .onChange(of: aquarium.offTimeMin) { _, _ in
                     var comps = DateComponents()
                     comps.hour = aquarium.offTimeHr
                     comps.minute = aquarium.offTimeMin
-                    offTimeDate = Calendar.current.date(from: comps) ?? offTimeDate
+                    offTimeDate =
+                    Calendar.current.date(from: comps) ?? offTimeDate
                 }
             }
             
@@ -168,12 +228,33 @@ struct SettingsView: View {
                     }
                 }
                 .pickerStyle(.wheel)
-
+                
             }
+            
+            
+            if showChangeWifi == false {
+                Button {
+                    showChangeWifi = true
+                } label: {
+                    Text("Change Wifi")
+                }
+                
+            }
+            
+            if showChangeWifi {
+                setupWifiView()
+            }
+            
+            
+            
+            
+            
+            
+        
+         
 
         }
 
-  
         .onChange(of: selectedTile) { oldValue, newValue in
             redValue = selectedTile.redmapTo255()
             greenValue = selectedTile.greenmapTo255()
@@ -186,10 +267,16 @@ struct SettingsView: View {
             )
             aquarium.pingAquarium()
         }
-        
-        .onChange(of: aquarium.bubbler_isOn, { oldValue, newValue in
-            aquarium.updateAquariumSetting(command: "bubbler", value: aquarium.bubbler_isOn ? "true" : "false")
-        })
+
+        .onChange(
+            of: aquarium.bubbler_isOn,
+            { oldValue, newValue in
+                aquarium.updateAquariumSetting(
+                    command: "bubbler",
+                    value: aquarium.bubbler_isOn ? "true" : "false"
+                )
+            }
+        )
         .task {
             redValue = aquarium.r_LED
             greenValue = aquarium.g_LED
@@ -197,7 +284,7 @@ struct SettingsView: View {
         }
 
     }
-    
+
     private static func format12Hour(hour: Int, minute: Int) -> String {
         let h = hour % 24
         let m = max(0, min(59, minute))
@@ -210,4 +297,3 @@ struct SettingsView: View {
 #Preview {
     SettingsView()
 }
-
