@@ -3,6 +3,26 @@
 #include <ArduinoJson.h>
 #include <Adafruit_NeoPixel.h>
 #include "SmartAquarium.h"
+#include <WiFi.h>
+#include "time.h"
+
+// --- WIFI CREDENTIALS ---
+const char* ssid = "Province.SynergyWifi.com";
+const char* password = "coldfang75";
+
+
+
+// --- NTP SERVER SETTINGS ---
+const char* ntpServer = "pool.ntp.org";
+const long gmtOffset_sec = -18000;    // timezone offset.
+const int daylightOffset_sec = 3600;  
+
+// Global Time Variables
+int milHour = 0;
+int milMin = 0;
+
+// Timer for updates
+unsigned long lastTimeUpdate = 0;
 
 
 #define pumpPin 0
@@ -27,8 +47,6 @@ Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_RGB + NEO_KHZ800);
 
 volatile bool updateLights = true;
 bool testing = false;
-int milHour = 15;
-int milMin = 30;
 
 
 void pingSettingsToApp() {
@@ -261,22 +279,58 @@ void setupBLE() {
 }
 //////////////////////////////////// end of bluetooth ////////////////////////////////////////////////////
 
-void setup(void) {
+
+void updateLocalTime() {
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) {
+    Serial.println("Failed to obtain time");
+    return;
+  }
+
+  milHour = timeinfo.tm_hour;
+  milMin = timeinfo.tm_min;
+
+  Serial.printf("Time Updated: %02d:%02d\n", milHour, milMin);
+}
+
+
+
+void setup() {
   Serial.begin(9600);
 
+  // 1. CONNECT TO INTERNET
+  Serial.print("Connecting to WiFi");
+  WiFi.begin(ssid, password);
 
+  // Wait for connection with a simple timeout/loading animation
+  int retryCount = 0;
+  while (WiFi.status() != WL_CONNECTED && retryCount < 20) {
+    delay(500);
+    Serial.print(".");
+    retryCount++;
+  }
 
-  // TODO:: Connect to internet.
-  // TODO:: set 'milHour' and 'milMin' to the actual time.
-  // TODO:: schdule timer to update milHour and milMin every 30 seconds or so.
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("\nConnected to WiFi!");
+    Serial.print("IP Address: ");
+    Serial.println(WiFi.localIP());
+
+    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+    updateLocalTime();  // Force an immediate update so milHour/milMin are set right now
+  } else {
+    Serial.println("\nFailed to connect to WiFi. Running offline mode.");
+  }
+
   // TODO:: add code for api inside smartAquarium.h and smartAquarium.cpp to sync to website
   // TODO:: add code inside smartAquarium.h and smartAquarium.cpp to sync to read sensors and set actual readings to the sensors
-
-
 
   pixels.begin();
   setupBLE();
 }
+
+
+
+
 int value;
 
 bool tempIsOk() {
@@ -399,6 +453,17 @@ void managePixels() {
 }
 
 void loop() {
+
+  if (millis() - lastTimeUpdate > 30000) {  // 30,000ms = 30 seconds
+    updateLocalTime();
+    lastTimeUpdate = millis();
+
+    // Check WiFi connection and reconnect if lost
+    if (WiFi.status() != WL_CONNECTED) {
+      WiFi.reconnect();
+    }
+  }
+
 
   managePixels();
   aquarium.update();  // for now randomly changes the reading, later make it actually read sensors.
