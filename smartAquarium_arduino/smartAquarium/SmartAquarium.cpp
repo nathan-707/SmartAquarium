@@ -1,8 +1,59 @@
+#include "ArduinoJson.hpp"
 #include "HardwareSerial.h"
 #include "esp32-hal.h"
 #include <stdlib.h>
 #include "SmartAquarium.h"
 #include <Adafruit_NeoPixel.h>
+#include <HTTPClient.h>
+#include <WiFiClientSecure.h>
+#include <ArduinoJson.h>
+
+bool SmartAquarium::linkDeviceSuccess(String deviceID) {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Error: WiFi not connected");
+    return false;
+  }
+
+  WiFiClientSecure client;
+  client.setInsecure();
+  HTTPClient http;
+
+  if (!http.begin(client, "https://aquasense.replit.app/create_device")) {
+    Serial.println("Connection failed!");
+    return false;
+  }
+
+  http.addHeader("Content-Type", "application/json");
+  DynamicJsonDocument doc(512);
+  doc["device_id"] = deviceID;
+  String requestBody;
+  serializeJson(doc, requestBody);
+  Serial.print("Sending Payload: ");
+  Serial.println(requestBody);
+  int httpResponseCode = http.POST(requestBody);
+
+  if (httpResponseCode > 0) {
+    String response = http.getString();
+    Serial.println("Server: " + response);
+    DynamicJsonDocument resDoc(1024);
+    deserializeJson(resDoc, response);
+    if (resDoc["success"]) {
+      device_token = resDoc["device_id"].as<String>();
+      saveString("device", device_token);
+      http.end();
+      Serial.print("Device linked success. saved key: ");
+      Serial.println(device_token);
+      return true;
+    }
+  } else {
+    Serial.print("Error code: ");
+    Serial.println(httpResponseCode);
+  }
+
+  http.end();
+  Serial.println("Device linking failed.");
+  return false;
+}
 
 bool SmartAquarium::tempIsOk() {
   if (readings.water_temp < (settings.targetTemp - settings.temp_Warning_thres)
@@ -12,7 +63,6 @@ bool SmartAquarium::tempIsOk() {
     return true;
   }
 }
-
 
 SmartAquarium::SmartAquarium(int pumpPin, int lightPin) {
   _pumpPin = pumpPin;
@@ -65,40 +115,33 @@ String SmartAquarium::serializeReadings() {
   doc["turbidity"] = readings.turbidity;
   doc["pH"] = readings.pH;
   doc["status"] = (int)readings.status;
-
   String output;
   serializeJson(doc, output);
   return output;
 }
 
-// --- NVS IMPLEMENTATION START ---
 
+// --- NVS IMPLEMENTATION START ---
 void SmartAquarium::restoreSettings() {
   preferences.begin("aqua", true);  // Open namespace "aqua" in read-only mode
-
   settings.bubbler_isOn = preferences.getBool("bubbler", false);
   settings.lamp_isOn = preferences.getBool("lamp", true);
-
+  device_token = preferences.getString("device");
   settings.temp_Warning_thres = preferences.getFloat("temp_warn", 3.0);
   settings.targetTemp = preferences.getFloat("target_temp", 71.0);
   settings.tds_Warning_thres = preferences.getFloat("tds_warn", 500.0);
   settings.daysFed_Warning_thres = preferences.getInt("fed_warn", 1);
-
   settings.r_LED = preferences.getInt("r_led", 0);
   settings.g_LED = preferences.getInt("g_led", 255);
   settings.b_LED = preferences.getInt("b_led", 0);
   settings.brightness = preferences.getFloat("bright", 1.0);
-
   settings.lightCycle = static_cast<LightCycle>(preferences.getInt("cycle", 0));
-
   settings.onTimeHr = preferences.getInt("on_h", 7);
   settings.onTimeMin = preferences.getInt("on_m", 0);
   settings.offTimeHr = preferences.getInt("off_h", 24);
   settings.offTimeMin = preferences.getInt("off_m", 0);
-
   settings.ssid = preferences.getString("ssid", "");
   settings.password = preferences.getString("pass", "");
-
   preferences.end();
 
   // Print all restored values
@@ -115,6 +158,9 @@ void SmartAquarium::restoreSettings() {
   Serial.printf("On Time: %02d:%02d\n", settings.onTimeHr, settings.onTimeMin);
   Serial.printf("Off Time: %02d:%02d\n", settings.offTimeHr, settings.offTimeMin);
   Serial.printf("SSID: %s\n", settings.ssid.c_str());
+  Serial.printf("token: %s\n", device_token);
+  Serial.println(device_token);
+
   // Don't print the password for security, or mask it
   Serial.printf("Password: %s\n", settings.password.length() > 0 ? "***" : "Empty");
   Serial.println("----------------------------------");
@@ -185,6 +231,7 @@ bool SmartAquarium::connectToInternetSuccessful() {
     return false;
   }
 }
+
 void SmartAquarium::begin() {
   Serial.println("Smart Aquarium begin!");
   pinMode(_pumpPin, OUTPUT);
@@ -227,13 +274,77 @@ void SmartAquarium::update() {
   applyHardwareState();
 }
 
+
+void SmartAquarium::sendReadingsToWebsite() {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Error: WiFi not connected");
+    return;
+  }
+
+  Serial.println("Uploading data to Aquasense...");
+  WiFiClientSecure client;
+  client.setInsecure();
+  HTTPClient http;
+
+  if (!http.begin(client, "https://aquasense.replit.app/upload_data")) {
+    Serial.println("Connection failed!");
+    return;
+  }
+
+  http.addHeader("Content-Type", "application/json");
+  DynamicJsonDocument doc(2048);
+  doc["device_token"] = device_token;
+  JsonArray dataArray = doc.createNestedArray("data");
+  long now = time(nullptr);
+
+  auto addDataPoint = [&](const char* key, float value) {
+    JsonObject point = dataArray.createNestedObject();
+    point["type"] = key; 
+    point["value"] = value;
+    point["time"] = now;
+  };
+
+  addDataPoint("tds", readings.tds_level);
+  addDataPoint("temp", readings.water_temp);
+  // addDataPoint("fed", readings.daysSinceFed);  // 0 or 1
+  addDataPoint("turbidity", readings.turbidity);
+  addDataPoint("pH", readings.pH);
+  addDataPoint("waterLevel_isOk", readings.waterLevel_isFull);
+
+  String requestBody;
+  serializeJson(doc, requestBody);
+  Serial.println("Payload: " + requestBody);
+  int httpResponseCode = http.POST(requestBody);
+
+  if (httpResponseCode > 0) {
+    String response = http.getString();
+    Serial.print("Server Response: ");
+    Serial.println(response);
+  } else {
+    Serial.print("Error sending POST: ");
+    Serial.println(httpResponseCode);
+  }
+
+  http.end();
+}
+
 void SmartAquarium::readSensors() {
   static unsigned long lastReadTime = 0;
-  if (millis() - lastReadTime > 2000) {
+
+  if (millis() - lastReadTime > 2000) {  // update app every 2 seconds
     lastReadTime = millis();
     readings.water_temp = 70 + (random(-5, 5));
     readings.tds_level = 500 + random(-10, 10);
     readings.waterLevel_isFull = true;
+    readings.turbidity = 1;
+    readings.pH = 1;
+    // todo: get camera snapshot
+    sendReadingUpdateToApp = true;
+  }
+
+  if (millis() - lastWebsiteUpdate > websiteUpdateInterval) {  // update website every 15 mins
+    lastWebsiteUpdate = millis();
+    sendReadingsToWebsite();
     sendReadingUpdateToApp = true;
   }
 }

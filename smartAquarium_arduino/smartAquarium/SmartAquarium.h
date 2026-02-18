@@ -5,7 +5,7 @@
 #include <ArduinoJson.h>
 #include <Adafruit_NeoPixel.h>
 #include <WiFi.h>
-#include <Preferences.h> // Include Preferences Library
+#include <Preferences.h>  // Include Preferences Library
 
 enum class WifiStatus : int {
   connecting = 0,
@@ -57,7 +57,6 @@ struct Readings {
 };
 
 class SmartAquarium {
-
 public:
   SmartAquarium(int pumpPin, int lightPin);
   String serializeSettings();
@@ -69,17 +68,20 @@ public:
   Readings readings;
   bool sendReadingUpdateToApp;
   bool connectToInternetSuccessful();
-  
+  bool linkDeviceSuccess(String deviceID);
+
   // NVS Methods
   void restoreSettings();
   void saveInt(const char* key, int value);
   void saveFloat(const char* key, float value);
   void saveBool(const char* key, bool value);
   void saveString(const char* key, String value);
-
 private:
-  Preferences preferences; // Create Preferences object
-  
+  Preferences preferences;  // Create Preferences object
+  String device_token;
+  void sendReadingsToWebsite();
+  const unsigned long websiteUpdateInterval = 900000;  // 15 mins.
+  unsigned long lastWebsiteUpdate = websiteUpdateInterval;
   bool tempIsOk();
   void updateTime();
   const char* ntpServer = "pool.ntp.org";
@@ -92,7 +94,6 @@ private:
   // hardware pins
   int _pumpPin;
   int _lightPin;
-
   void readSensors();
   void applyHardwareState();
 };

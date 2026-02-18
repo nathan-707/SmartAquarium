@@ -13,6 +13,7 @@
 
 SmartAquarium aquarium(pumpPin, lightPin);
 bool testing = false;
+volatile bool lampUpdated = true;
 
 
 /////////////////////////////////// mark bluetooth ///////////////////////////////////////////////////
@@ -107,6 +108,7 @@ class IosCommandCallbacks : public NimBLECharacteristicCallbacks {
       aquarium.settings.lamp_isOn = isOn;
       aquarium.saveBool("lamp", isOn);  // Save
       Serial.println(isOn ? "Lamp On." : "Lamp Off.");
+      lampUpdated = true;
 
     } else if (strcmp(command, "brightness") == 0) {
       aquarium.settings.brightness = doc["value"];
@@ -215,6 +217,8 @@ void setup() {
   }
 
   aquarium.begin();
+  // aquarium.linkDeviceSuccess("HOKTA0"); // klklkl sense currently linked.
+  // delay(5000);
 }
 
 void sendReadingsUpdateToApp() {
@@ -276,7 +280,8 @@ void managePixels() {
 
       RGB result = aquarium.standardLightCycle();
 
-      if (result.update) {
+      if (result.update || lampUpdated) {
+        lampUpdated = false;
         pixels.setPixelColor(0, pixels.Color(result.green, result.red, result.blue));
         pixels.show();
       }
