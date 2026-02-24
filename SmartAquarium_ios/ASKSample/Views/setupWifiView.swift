@@ -10,20 +10,14 @@ import SwiftUI
 
 struct setupWifiView: View {
     @EnvironmentObject var aquarium: DiceSessionManager
-    
-
     var body: some View {
-
         VStack {
-
-       
                 Text("Enter WiFi Network for Aquarium")
                 .font(.title)
                 .bold()
             
             Spacer()
             
-
             VStack(alignment: .leading, spacing: 8) {
                 Text("SSID")
                     .font(.subheadline)

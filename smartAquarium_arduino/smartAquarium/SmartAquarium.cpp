@@ -299,7 +299,7 @@ void SmartAquarium::sendReadingsToWebsite() {
 
   auto addDataPoint = [&](const char* key, float value) {
     JsonObject point = dataArray.createNestedObject();
-    point["type"] = key; 
+    point["type"] = key;
     point["value"] = value;
     point["time"] = now;
   };
@@ -330,14 +330,17 @@ void SmartAquarium::sendReadingsToWebsite() {
 
 void SmartAquarium::readSensors() {
   static unsigned long lastReadTime = 0;
+  static bool poweredUp = true;
 
-  if (millis() - lastReadTime > 2000) {  // update app every 2 seconds
+  if (millis() - lastReadTime > 2000 || poweredUp) {  // update app every 2 seconds
     lastReadTime = millis();
+    poweredUp = false;
     readings.water_temp = 70 + (random(-5, 5));
     readings.tds_level = 500 + random(-10, 10);
     readings.waterLevel_isFull = true;
     readings.turbidity = 1;
     readings.pH = 1;
+
     // todo: get camera snapshot
     sendReadingUpdateToApp = true;
   }

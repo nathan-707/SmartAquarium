@@ -6,7 +6,7 @@
 #define pumpPin 0
 #define lightPin 0
 #define PIN 38
-#define NUMPIXELS 1
+#define NUMPIXELS 10
 // TODO:: add code for api inside smartAquarium.h and smartAquarium.cpp to sync to website
 // TODO:: add code inside smartAquarium.h and smartAquarium.cpp to sync to read sensors and set actual readings to the sensors
 // TODO:: use preferences lib to store settings and wifi ssid and password across boots.
@@ -28,9 +28,18 @@ NimBLECharacteristic* appCommandChacteristic;
 NimBLECharacteristic* readingsChacteristic;
 Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_RGB + NEO_KHZ800);
 
-void pingSettingsToApp() {
+void pingApp() {
+  Serial.println("PING");
   pCharacteristic->setValue(aquarium.serializeSettings());
   pCharacteristic->notify();
+  readingsChacteristic->setValue(aquarium.serializeReadings());
+  readingsChacteristic->notify();
+}
+
+void pingOnlyReadings() {
+  Serial.println("READINGS");
+  readingsChacteristic->setValue(aquarium.serializeReadings());
+  readingsChacteristic->notify();
 }
 
 /** Server Callbacks */
@@ -40,8 +49,7 @@ class ServerCallbacks : public NimBLEServerCallbacks {
     // Update connection params for faster response
     pServer->updateConnParams(connInfo.getConnHandle(), 24, 48, 0, 60);
     // Update value and notify
-    pingSettingsToApp();
-    sendReadingsUpdateToApp();
+    pingApp();
   }
 
   void onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) override {
@@ -74,8 +82,8 @@ class IosCommandCallbacks : public NimBLECharacteristicCallbacks {
       aquarium.saveInt("r_led", aquarium.settings.r_LED);
       aquarium.saveInt("g_led", aquarium.settings.g_LED);
       aquarium.saveInt("b_led", aquarium.settings.b_LED);
+      lampUpdated = true;
 
-      Serial.printf("RGB Set: %d, %d, %d\n", aquarium.settings.r_LED, aquarium.settings.g_LED, aquarium.settings.b_LED);
 
     } else if (strcmp(command, "bubbler") == 0) {
       bool isOn = (strcmp(value_str, "true") == 0);
@@ -114,7 +122,7 @@ class IosCommandCallbacks : public NimBLECharacteristicCallbacks {
       aquarium.settings.brightness = doc["value"];
       aquarium.saveFloat("bright", aquarium.settings.brightness);  // Save
       Serial.println(aquarium.settings.brightness);
-
+      lampUpdated = true;
     } else if (strcmp(command, "lightCycle") == 0) {
       int cycleIndex = doc["value"];
       aquarium.settings.lightCycle = static_cast<LightCycle>(cycleIndex);
@@ -143,12 +151,12 @@ class IosCommandCallbacks : public NimBLECharacteristicCallbacks {
 
     } else if (strcmp(command, "ssid") == 0) {
       aquarium.settings.ssid = doc["value"].as<String>();
-      aquarium.saveString("ssid", aquarium.settings.ssid); // Save
+      aquarium.saveString("ssid", aquarium.settings.ssid);  // Save
       Serial.println("SSID Updated");
 
     } else if (strcmp(command, "password") == 0) {
       aquarium.settings.password = doc["value"].as<String>();
-      aquarium.saveString("pass", aquarium.settings.password); // Save
+      aquarium.saveString("pass", aquarium.settings.password);  // Save
       Serial.println("Password Updated");
     }
   }
@@ -164,10 +172,10 @@ class ReadingCommandCallbacks : public NimBLECharacteristicCallbacks {
 /** Characteristic Callbacks */
 class CharacteristicCallbacks : public NimBLECharacteristicCallbacks {
   void onRead(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override {
-    pingSettingsToApp();
+    pingApp();
   }
   void onWrite(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override {
-    pingSettingsToApp();
+    pingApp();
   }
 } chrCallbacks;
 
@@ -207,24 +215,36 @@ void setup() {
   Serial.begin(9600);
   setupBLE();
   pixels.begin();
+  aquarium.begin();
+
   aquarium.restoreSettings();
+  pingOnlyReadings();  // send update to app to tell it aquarium is connecting before starting.
   bool connected = aquarium.connectToInternetSuccessful();
-  sendReadingsUpdateToApp();  // send update to app to tell it aquarium is connecting before starting.
+  pingOnlyReadings();  // send update to app to tell it aquarium is connecting before starting.
+
+
 
   while (connected == false) {
     connected = aquarium.connectToInternetSuccessful();
-    sendReadingsUpdateToApp();  // send update to app to tell it aquarium is connecting before starting.
+    pingOnlyReadings();  // send update to app to tell it aquarium is connecting before starting.
   }
 
-  aquarium.begin();
+  pingApp();
+
   // aquarium.linkDeviceSuccess("HOKTA0"); // klklkl sense currently linked.
   // delay(5000);
 }
 
-void sendReadingsUpdateToApp() {
-  readingsChacteristic->setValue(aquarium.serializeReadings());
-  readingsChacteristic->notify();
+
+void updateAllLights(int red, int green, int blue) {
+
+  for (int i = 0; i < NUMPIXELS; i++) {
+    pixels.setPixelColor(i, pixels.Color(green, red, blue));
+  }
+  pixels.show();
 }
+
+
 
 void runTestCycle() {
   Serial.println("\n--- STARTING 24H TURBO TEST ---");
@@ -241,8 +261,7 @@ void runTestCycle() {
     // 2. Run the Cycle Logic (Force update with testMode = true)
     RGB result = aquarium.standardLightCycle(true, simHour, simMin);
     if (result.update) {
-      pixels.setPixelColor(0, pixels.Color(result.green, result.red, result.blue));
-      pixels.show();
+      updateAllLights(result.red, result.green, result.blue);
     }
 
     // 3. Retrieve the color explicitly from the hardware/library buffer
@@ -265,9 +284,9 @@ void runTestCycle() {
 }
 
 void managePixels() {
+
   if (aquarium.settings.lamp_isOn == false) {  // turn
-    pixels.setPixelColor(0, 0, 0, 0);
-    pixels.show();
+    updateAllLights(0, 0, 0);
     return;
   }
 
@@ -282,14 +301,12 @@ void managePixels() {
 
       if (result.update || lampUpdated) {
         lampUpdated = false;
-        pixels.setPixelColor(0, pixels.Color(result.green, result.red, result.blue));
-        pixels.show();
+        updateAllLights(result.red, result.green, result.blue);
       }
     }
 
   } else if (aquarium.settings.lightCycle == LightCycle::noSchedule) {
-    pixels.setPixelColor(0, pixels.Color(aquarium.settings.g_LED, aquarium.settings.r_LED, aquarium.settings.b_LED));
-    pixels.show();
+    updateAllLights(aquarium.settings.r_LED, aquarium.settings.g_LED, aquarium.settings.b_LED);
   }
 }
 
@@ -301,7 +318,7 @@ void loop() {
   if (pServer->getConnectedCount() > 0) {
     if (aquarium.sendReadingUpdateToApp) {  // sensors just got read. report to the app then clear the flag.
       aquarium.sendReadingUpdateToApp = false;
-      sendReadingsUpdateToApp();
+      pingOnlyReadings();
     }
   }
 }

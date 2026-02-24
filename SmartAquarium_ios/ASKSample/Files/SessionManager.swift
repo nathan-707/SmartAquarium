@@ -73,7 +73,7 @@ class DiceSessionManager: NSObject, ObservableObject {
 
         return ASPickerDisplayItem(
             name: SmartAquarium.blue.displayName,
-            productImage: UIImage(named: SmartAquarium.blue.diceName)!,
+            productImage: UIImage(named: "smartAquarium")!,
             descriptor: descriptor
         )
     }()
