@@ -3,15 +3,34 @@
 #include <Adafruit_NeoPixel.h>
 #include "SmartAquarium.h"
 
-#define pumpPin 0
-#define lightPin 0
-#define PIN 38
+#define PIN 38  // pixels.
 #define NUMPIXELS 10
+
+
+
+// hardware pins.
+#define tdsPin 2           // cs
+#define tempSenPin 17       // dc
+#define waterLevelPin 11    // reset
+#define phSenPin 8          // SDA
+#define turbiditySenPin 18  // CLK
+
+#define pumpPin 21          // a
+#define warningLightPin 15  // b
+#define lastFedButton 16     // c
+
+
+// void SmartAquarium::begin(int pumpPin, int tdsPin, int tempSenPin, int waterLevelPin, int phSenPin, int turSenPin, int warningLightPin, int lastFedButton)
+
+// TODO: read temp
+// TODO
+
+//DONE::::::::::::::::::::::::::::::::
 // TODO:: add code for api inside smartAquarium.h and smartAquarium.cpp to sync to website
 // TODO:: add code inside smartAquarium.h and smartAquarium.cpp to sync to read sensors and set actual readings to the sensors
 // TODO:: use preferences lib to store settings and wifi ssid and password across boots.
 
-SmartAquarium aquarium(pumpPin, lightPin);
+SmartAquarium aquarium;
 bool testing = false;
 volatile bool lampUpdated = true;
 
@@ -215,7 +234,7 @@ void setup() {
   Serial.begin(9600);
   setupBLE();
   pixels.begin();
-  aquarium.begin();
+  aquarium.begin(pumpPin, tdsPin, tempSenPin, waterLevelPin, phSenPin, turbiditySenPin, warningLightPin, lastFedButton);
 
   aquarium.restoreSettings();
   pingOnlyReadings();  // send update to app to tell it aquarium is connecting before starting.

@@ -1,3 +1,4 @@
+#include "esp32-hal-gpio.h"
 #include "ArduinoJson.hpp"
 #include "HardwareSerial.h"
 #include "esp32-hal.h"
@@ -64,9 +65,7 @@ bool SmartAquarium::tempIsOk() {
   }
 }
 
-SmartAquarium::SmartAquarium(int pumpPin, int lightPin) {
-  _pumpPin = pumpPin;
-  _lightPin = lightPin;
+SmartAquarium::SmartAquarium() {
 
   // Set Defaults (Will be overwritten by restoreSettings if NVS data exists)
   settings.bubbler_isOn = false;
@@ -232,10 +231,35 @@ bool SmartAquarium::connectToInternetSuccessful() {
   }
 }
 
-void SmartAquarium::begin() {
+void SmartAquarium::begin(int pumpPin, int tdsPin, int tempSenPin, int waterLevelPin, int phSenPin, int turSenPin, int warningLightPin, int lastFedButton) {
   Serial.println("Smart Aquarium begin!");
+
+  _pumpPin = pumpPin;
   pinMode(_pumpPin, OUTPUT);
-  pinMode(_lightPin, OUTPUT);
+
+  _tdsPin = tdsPin;
+  pinMode(_tdsPin, INPUT);
+  Serial.println("TDS: ");
+  Serial.println(_tdsPin);
+
+  _tempSenPin = tempSenPin;
+  pinMode(_tempSenPin, INPUT);
+
+  _waterLevelPin = waterLevelPin;
+  pinMode(_waterLevelPin, INPUT);
+
+  _phSenPin = phSenPin;
+  pinMode(_phSenPin, INPUT);
+
+  _turSenPin = turSenPin;
+  pinMode(_turSenPin, INPUT);
+
+  _warningLightPin = warningLightPin;
+  pinMode(_warningLightPin, OUTPUT);
+
+  _lastFedButton = lastFedButton;
+  pinMode(_lastFedButton, INPUT_PULLUP);
+
   update();
   updateTime();
 }
@@ -256,7 +280,6 @@ void SmartAquarium::updateTime() {
 }
 
 void SmartAquarium::update() {
-
   // if wifi disconnects, try to reconnect. and update wifi status.
   if (WiFi.status() != WL_CONNECTED) {
     WiFi.reconnect();
@@ -265,11 +288,23 @@ void SmartAquarium::update() {
     readings.status = WifiStatus::connected;
   }
 
-
   if (millis() - lastTimeUpdate > 30000) {
     lastTimeUpdate = millis();
     updateTime();
   }
+
+  // --- ADDED: Fast TDS Sampling Background Task ---
+  static unsigned long analogSampleTimepoint = millis();
+  if (millis() - analogSampleTimepoint > 40U) {  // every 40 milliseconds
+    analogSampleTimepoint = millis();
+    analogBuffer[analogBufferIndex] = analogRead(_tdsPin);
+    analogBufferIndex++;
+    if (analogBufferIndex == SCOUNT) {
+      analogBufferIndex = 0;
+    }
+  }
+  // ------------------------------------------------
+
   readSensors();
   applyHardwareState();
 }
@@ -328,6 +363,55 @@ void SmartAquarium::sendReadingsToWebsite() {
   http.end();
 }
 
+
+int SmartAquarium::getMedianNum(int bArray[], int iFilterLen) {
+  int bTab[iFilterLen];
+  for (byte i = 0; i < iFilterLen; i++)
+    bTab[i] = bArray[i];
+  int i, j, bTemp;
+  for (j = 0; j < iFilterLen - 1; j++) {
+    for (i = 0; i < iFilterLen - j - 1; i++) {
+      if (bTab[i] > bTab[i + 1]) {
+        bTemp = bTab[i];
+        bTab[i] = bTab[i + 1];
+        bTab[i + 1] = bTemp;
+      }
+    }
+  }
+  if ((iFilterLen & 1) > 0) {
+    bTemp = bTab[(iFilterLen - 1) / 2];
+  } else {
+    bTemp = (bTab[iFilterLen / 2] + bTab[iFilterLen / 2 - 1]) / 2;
+  }
+  return bTemp;
+}
+
+
+
+float SmartAquarium::readTDS() {
+  // 1. Copy the background buffer for safe filtering
+  for (copyIndex = 0; copyIndex < SCOUNT; copyIndex++) {
+    analogBufferTemp[copyIndex] = analogBuffer[copyIndex];
+  }
+  
+  // 2. Get the median voltage
+  averageVoltage = getMedianNum(analogBufferTemp, SCOUNT) * (float)VREF / 4096.0;
+  
+  // 3. Convert current water temp from Fahrenheit to Celsius for the math
+  float tempC = (readings.water_temp - 32.0) * 5.0 / 9.0;
+  float compensationCoefficient = 1.0 + 0.02 * (tempC - 25.0);
+  
+  // 4. Calculate final TDS
+  float compensationVoltage = averageVoltage / compensationCoefficient;
+  tdsValue = (133.42 * compensationVoltage * compensationVoltage * compensationVoltage - 255.86 * compensationVoltage * compensationVoltage + 857.39 * compensationVoltage) * 0.5;
+  
+  Serial.print("TDS Value: ");
+  Serial.print(tdsValue, 0);
+  Serial.println(" ppm");
+  
+  return tdsValue;
+}
+
 void SmartAquarium::readSensors() {
   static unsigned long lastReadTime = 0;
   static bool poweredUp = true;
@@ -335,12 +419,15 @@ void SmartAquarium::readSensors() {
   if (millis() - lastReadTime > 2000 || poweredUp) {  // update app every 2 seconds
     lastReadTime = millis();
     poweredUp = false;
-    readings.water_temp = 70 + (random(-5, 5));
-    readings.tds_level = 500 + random(-10, 10);
+
+    // todo: actually read these and set them.
     readings.waterLevel_isFull = true;
     readings.turbidity = 1;
     readings.pH = 1;
+    readings.water_temp = 70;
 
+
+    readings.tds_level = readTDS();
     // todo: get camera snapshot
     sendReadingUpdateToApp = true;
   }

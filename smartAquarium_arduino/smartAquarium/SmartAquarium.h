@@ -58,11 +58,13 @@ struct Readings {
 
 class SmartAquarium {
 public:
-  SmartAquarium(int pumpPin, int lightPin);
+  SmartAquarium();
   String serializeSettings();
   String serializeReadings();
   RGB standardLightCycle(bool testMode = false, int testHr = 0, int testMin = 0);
-  void begin();
+  void begin(int pumpPin, int tdsPin, int tempSenPin, int waterLevelPin, int phSenPin, int turSenPin, int warningLightPin, int lastFedButton);
+
+
   void update();
   Settings settings;
   Readings readings;
@@ -94,8 +96,33 @@ private:
   // hardware pins
   int _pumpPin;
   int _lightPin;
+  int _tdsPin;
+  int _tempSenPin;
+  int _waterLevelPin;
+  int _phSenPin;
+  int _turSenPin;
+  int _warningLightPin;
+  int _lastFedButton;
+
+
   void readSensors();
   void applyHardwareState();
+
+
+  // tds
+  const float VREF = 3.3;  // FIXED: ESP32 Analog reference voltage
+  const static int SCOUNT = 30;   // sum of sample point
+
+  int analogBuffer[SCOUNT];  // store the analog value in the array, read from ADC
+  int analogBufferTemp[SCOUNT];
+  int analogBufferIndex = 0;
+  int copyIndex = 0;
+
+  float averageVoltage = 0;
+  float tdsValue = 0;
+
+  int getMedianNum(int bArray[], int iFilterLen);
+  float readTDS();
 };
 
 #endif  // SMART_AQUARIUM_H
