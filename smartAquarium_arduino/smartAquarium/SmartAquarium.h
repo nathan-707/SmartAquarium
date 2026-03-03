@@ -5,7 +5,9 @@
 #include <ArduinoJson.h>
 #include <Adafruit_NeoPixel.h>
 #include <WiFi.h>
-#include <Preferences.h>  // Include Preferences Library
+#include <Preferences.h>
+#include <OneWire.h>            // Added for Temp Sensor
+#include <DallasTemperature.h>  // Added for Temp Sensor
 
 enum class WifiStatus : int {
   connecting = 0,
@@ -48,7 +50,7 @@ struct Settings {
 struct Readings {
   float tds_level;
   float water_temp;
-  int daysSinceFed;
+  int hoursSinceFed;
   bool waterLevel_isFull;
   bool lights_isOn;
   float turbidity;
@@ -64,7 +66,6 @@ public:
   RGB standardLightCycle(bool testMode = false, int testHr = 0, int testMin = 0);
   void begin(int pumpPin, int tdsPin, int tempSenPin, int waterLevelPin, int phSenPin, int turSenPin, int warningLightPin, int lastFedButton);
 
-
   void update();
   Settings settings;
   Readings readings;
@@ -78,8 +79,16 @@ public:
   void saveFloat(const char* key, float value);
   void saveBool(const char* key, bool value);
   void saveString(const char* key, String value);
+  bool fedButtonPressed = false;
+
+  bool hasSystemAlert();
+
 private:
-  Preferences preferences;  // Create Preferences object
+  unsigned long _lastBlinkTime;
+  bool _lightState;
+  unsigned long lastUpdateMillis = 0;
+  const unsigned long ONE_HOUR = 3600000;  // 60 min * 60 sec * 1000 ms
+  Preferences preferences;                 // Create Preferences object
   String device_token;
   void sendReadingsToWebsite();
   const unsigned long websiteUpdateInterval = 900000;  // 15 mins.
@@ -104,14 +113,17 @@ private:
   int _warningLightPin;
   int _lastFedButton;
 
+  // Temperature Sensor Objects
+  OneWire* _oneWire;
+  DallasTemperature* _tempSensor;
+  void readTemperature();
 
   void readSensors();
   void applyHardwareState();
 
-
   // tds
-  const float VREF = 3.3;  // FIXED: ESP32 Analog reference voltage
-  const static int SCOUNT = 30;   // sum of sample point
+  const float VREF = 3.3;        // FIXED: ESP32 Analog reference voltage
+  const static int SCOUNT = 30;  // sum of sample point
 
   int analogBuffer[SCOUNT];  // store the analog value in the array, read from ADC
   int analogBufferTemp[SCOUNT];

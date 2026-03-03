@@ -66,15 +66,14 @@ bool SmartAquarium::tempIsOk() {
 }
 
 SmartAquarium::SmartAquarium() {
-
   // Set Defaults (Will be overwritten by restoreSettings if NVS data exists)
   settings.bubbler_isOn = false;
   settings.r_LED = 0;
   settings.g_LED = 255;
   settings.b_LED = 0;
   readings.tds_level = 0.0;
-  readings.water_temp = 0.0;
-  readings.daysSinceFed = 0;
+  readings.water_temp = 70.0;  // Start with a safe default
+  readings.hoursSinceFed = 0;
 }
 
 String SmartAquarium::serializeSettings() {
@@ -101,14 +100,25 @@ String SmartAquarium::serializeSettings() {
   return output;
 }
 
+
+bool SmartAquarium::hasSystemAlert() {
+  // Check each condition. If any fail, return true (meaning there is an alert).
+  bool tdsNotOk = readings.tds_level >= settings.tds_Warning_thres;
+  bool tempNotOk = !tempIsOk();
+  bool feedingNotOk = readings.hoursSinceFed > settings.daysFed_Warning_thres;
+  bool waterLevelNotOk = !readings.waterLevel_isFull;
+
+  return (tdsNotOk || tempNotOk || feedingNotOk || waterLevelNotOk);
+}
+
 String SmartAquarium::serializeReadings() {
   StaticJsonDocument<400> doc;
   doc["tds"] = serialized(String(readings.tds_level, 2));
   doc["temp"] = serialized(String(readings.water_temp, 2));
-  doc["fed"] = readings.daysSinceFed;
+  doc["fed"] = readings.hoursSinceFed;
   doc["tds_isOk"] = readings.tds_level < settings.tds_Warning_thres ? true : false;
   doc["temp_isOk"] = tempIsOk();
-  doc["daysFed_isOk"] = readings.daysSinceFed <= settings.daysFed_Warning_thres ? true : false;
+  doc["daysFed_isOk"] = readings.hoursSinceFed <= settings.daysFed_Warning_thres ? true : false;
   doc["waterLevel_isOk"] = readings.waterLevel_isFull;
   doc["lights_isOn"] = readings.lights_isOn;
   doc["turbidity"] = readings.turbidity;
@@ -118,7 +128,6 @@ String SmartAquarium::serializeReadings() {
   serializeJson(doc, output);
   return output;
 }
-
 
 // --- NVS IMPLEMENTATION START ---
 void SmartAquarium::restoreSettings() {
@@ -143,7 +152,6 @@ void SmartAquarium::restoreSettings() {
   settings.password = preferences.getString("pass", "");
   preferences.end();
 
-  // Print all restored values
   Serial.println("\n--- Settings Restored from NVS ---");
   Serial.printf("Bubbler: %s\n", settings.bubbler_isOn ? "ON" : "OFF");
   Serial.printf("Lamp: %s\n", settings.lamp_isOn ? "ON" : "OFF");
@@ -157,16 +165,13 @@ void SmartAquarium::restoreSettings() {
   Serial.printf("On Time: %02d:%02d\n", settings.onTimeHr, settings.onTimeMin);
   Serial.printf("Off Time: %02d:%02d\n", settings.offTimeHr, settings.offTimeMin);
   Serial.printf("SSID: %s\n", settings.ssid.c_str());
-  Serial.printf("token: %s\n", device_token);
-  Serial.println(device_token);
-
-  // Don't print the password for security, or mask it
+  Serial.printf("token: %s\n", device_token.c_str());
   Serial.printf("Password: %s\n", settings.password.length() > 0 ? "***" : "Empty");
   Serial.println("----------------------------------");
 }
 
 void SmartAquarium::saveInt(const char* key, int value) {
-  preferences.begin("aqua", false);  // Read-Write
+  preferences.begin("aqua", false);
   preferences.putInt(key, value);
   preferences.end();
 }
@@ -216,12 +221,9 @@ bool SmartAquarium::connectToInternetSuccessful() {
     Serial.print("IP Address: ");
     Serial.println(WiFi.localIP());
 
-    // --- NEW: SAVE CREDENTIALS ON SUCCESS ---
-    // This ensures we only persist credentials that actually work
     saveString("ssid", settings.ssid);
     saveString("pass", settings.password);
     Serial.println("WiFi Credentials Saved to NVS.");
-    // ----------------------------------------
 
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
     return true;
@@ -239,14 +241,19 @@ void SmartAquarium::begin(int pumpPin, int tdsPin, int tempSenPin, int waterLeve
 
   _tdsPin = tdsPin;
   pinMode(_tdsPin, INPUT);
-  Serial.println("TDS: ");
+  Serial.print("TDS Pin: ");
   Serial.println(_tdsPin);
 
+  // Dynamic initialization for OneWire and DallasTemperature
   _tempSenPin = tempSenPin;
-  pinMode(_tempSenPin, INPUT);
+  _oneWire = new OneWire(_tempSenPin);
+  _tempSensor = new DallasTemperature(_oneWire);
+  _tempSensor->begin();
+  _tempSensor->setWaitForConversion(false);  // Prevents the 750ms delay
+  _tempSensor->requestTemperatures();        // Kick off the very first reading
 
   _waterLevelPin = waterLevelPin;
-  pinMode(_waterLevelPin, INPUT);
+  pinMode(_waterLevelPin, INPUT_PULLUP);
 
   _phSenPin = phSenPin;
   pinMode(_phSenPin, INPUT);
@@ -267,19 +274,47 @@ void SmartAquarium::begin(int pumpPin, int tdsPin, int tempSenPin, int waterLeve
 void SmartAquarium::updateTime() {
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo)) {
-    // Serial.println("Failed to obtain time"); // Reduced noise
     return;
   }
   milHour = timeinfo.tm_hour;
   milMin = timeinfo.tm_min;
-
-  // Reconnect logic
-  if (WiFi.status() != WL_CONNECTED && settings.ssid != "") {
-    // Optional: Add logic here to retry connection occasionally, not every loop
-  }
 }
 
 void SmartAquarium::update() {
+
+  
+  if (hasSystemAlert()) {
+    if (readings.hoursSinceFed > settings.daysFed_Warning_thres) {
+
+      if (millis() - _lastBlinkTime >= 300) {
+        _lastBlinkTime = millis();  
+        _lightState = !_lightState;      
+        digitalWrite(_warningLightPin, _lightState);
+      }
+
+    } else {
+      digitalWrite(_warningLightPin, HIGH);
+    }
+  } else {
+    digitalWrite(_warningLightPin, LOW);
+  }
+
+
+
+  if (digitalRead(_lastFedButton) == LOW) {
+    readings.hoursSinceFed = 0;
+    lastUpdateMillis = millis();
+    fedButtonPressed = true;
+  }
+
+  if (millis() - lastUpdateMillis >= ONE_HOUR) {
+    readings.hoursSinceFed++;
+    lastUpdateMillis = millis();
+  }
+
+
+
+
   // if wifi disconnects, try to reconnect. and update wifi status.
   if (WiFi.status() != WL_CONNECTED) {
     WiFi.reconnect();
@@ -293,7 +328,7 @@ void SmartAquarium::update() {
     updateTime();
   }
 
-  // --- ADDED: Fast TDS Sampling Background Task ---
+  // --- Fast TDS Sampling Background Task ---
   static unsigned long analogSampleTimepoint = millis();
   if (millis() - analogSampleTimepoint > 40U) {  // every 40 milliseconds
     analogSampleTimepoint = millis();
@@ -303,12 +338,10 @@ void SmartAquarium::update() {
       analogBufferIndex = 0;
     }
   }
-  // ------------------------------------------------
 
   readSensors();
   applyHardwareState();
 }
-
 
 void SmartAquarium::sendReadingsToWebsite() {
   if (WiFi.status() != WL_CONNECTED) {
@@ -341,7 +374,6 @@ void SmartAquarium::sendReadingsToWebsite() {
 
   addDataPoint("tds", readings.tds_level);
   addDataPoint("temp", readings.water_temp);
-  // addDataPoint("fed", readings.daysSinceFed);  // 0 or 1
   addDataPoint("turbidity", readings.turbidity);
   addDataPoint("pH", readings.pH);
   addDataPoint("waterLevel_isOk", readings.waterLevel_isFull);
@@ -362,7 +394,6 @@ void SmartAquarium::sendReadingsToWebsite() {
 
   http.end();
 }
-
 
 int SmartAquarium::getMedianNum(int bArray[], int iFilterLen) {
   int bTab[iFilterLen];
@@ -386,29 +417,45 @@ int SmartAquarium::getMedianNum(int bArray[], int iFilterLen) {
   return bTemp;
 }
 
+void SmartAquarium::readTemperature() {
+  // Fetch the temperature that was calculating in the background
+  float tempF = _tempSensor->getTempFByIndex(0);
 
+  // The sensor returns -196.0F (-127C) if it gets disconnected or has a wiring error
+  if (tempF > -100.0) {
+    readings.water_temp = tempF;
+    Serial.print("Water Temp: ");
+    Serial.print(readings.water_temp);
+    Serial.println(" F");
+  } else {
+    readings.water_temp = 70;  // temp sensor failed. set temp to 70 for now.
+    Serial.println("Error: DS18B20 disconnected or read error.");
+  }
+
+  _tempSensor->requestTemperatures();
+}
 
 float SmartAquarium::readTDS() {
   // 1. Copy the background buffer for safe filtering
   for (copyIndex = 0; copyIndex < SCOUNT; copyIndex++) {
     analogBufferTemp[copyIndex] = analogBuffer[copyIndex];
   }
-  
+
   // 2. Get the median voltage
   averageVoltage = getMedianNum(analogBufferTemp, SCOUNT) * (float)VREF / 4096.0;
-  
+
   // 3. Convert current water temp from Fahrenheit to Celsius for the math
   float tempC = (readings.water_temp - 32.0) * 5.0 / 9.0;
   float compensationCoefficient = 1.0 + 0.02 * (tempC - 25.0);
-  
+
   // 4. Calculate final TDS
   float compensationVoltage = averageVoltage / compensationCoefficient;
   tdsValue = (133.42 * compensationVoltage * compensationVoltage * compensationVoltage - 255.86 * compensationVoltage * compensationVoltage + 857.39 * compensationVoltage) * 0.5;
-  
+
   Serial.print("TDS Value: ");
   Serial.print(tdsValue, 0);
   Serial.println(" ppm");
-  
+
   return tdsValue;
 }
 
@@ -420,15 +467,20 @@ void SmartAquarium::readSensors() {
     lastReadTime = millis();
     poweredUp = false;
 
-    // todo: actually read these and set them.
-    readings.waterLevel_isFull = true;
+    // placeholder logic for other sensors
     readings.turbidity = 1;
     readings.pH = 1;
-    readings.water_temp = 70;
 
-
+    // Read temp first, then use it to calculate TDS
+    readTemperature();
     readings.tds_level = readTDS();
-    // todo: get camera snapshot
+
+    if (digitalRead(_waterLevelPin) == LOW) {
+      readings.waterLevel_isFull = true;
+    } else {
+      readings.waterLevel_isFull = false;
+    }
+
     sendReadingUpdateToApp = true;
   }
 

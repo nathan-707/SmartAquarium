@@ -9,15 +9,18 @@
 
 
 // hardware pins.
-#define tdsPin 2           // cs
-#define tempSenPin 17       // dc
+#define tdsPin 2            // cs
+#define warningLightPin 17  // dc
 #define waterLevelPin 11    // reset
 #define phSenPin 8          // SDA
 #define turbiditySenPin 18  // CLK
 
-#define pumpPin 21          // a
-#define warningLightPin 15  // b
-#define lastFedButton 16     // c
+
+#define lastFedButton 21    // a
+#define pumpPin 15          // b
+#define tempSenPin 16       // c
+
+
 
 
 // void SmartAquarium::begin(int pumpPin, int tdsPin, int tempSenPin, int waterLevelPin, int phSenPin, int turSenPin, int warningLightPin, int lastFedButton)
@@ -330,6 +333,8 @@ void managePixels() {
 }
 
 void loop() {
+
+ 
   managePixels();
   aquarium.update();  // for now randomly changes the reading, later make it actually read sensors.
 
