@@ -25,6 +25,7 @@
 
 // void SmartAquarium::begin(int pumpPin, int tdsPin, int tempSenPin, int waterLevelPin, int phSenPin, int turSenPin, int warningLightPin, int lastFedButton)
 
+// todo:: make it where its not needed to connect to internet for it to start the ble. it shouldnt force connect screen even if no internent connection., 
 // TODO: read temp
 // TODO
 

@@ -398,7 +398,7 @@ struct ESPSettings: Codable {
 struct Readings: Codable {
     let tds: Float // tds reading.
     let temp: Float // water temp.
-    let fed: Int // days since last fed.
+    let fed: Int // hours since last fed.
     let tds_isOk: Bool
     let temp_isOk: Bool
     let daysFed_isOk: Bool

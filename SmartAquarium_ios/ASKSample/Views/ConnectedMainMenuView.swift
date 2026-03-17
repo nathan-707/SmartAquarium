@@ -52,7 +52,7 @@ struct ConnectedMainMenuView: View {
                 VStack(spacing: 12) {
                     ReadingCard(title: "Water Temp", value: String(aquarium.water_temp), unit: "°F", symbol: "thermometer.medium")
                     ReadingCard(title: "TDS", value: String(aquarium.tds_level), unit: "ppm", symbol: "bubbles.and.sparkles.fill")
-                    ReadingCard(title: "Days Since Fed", value: String(aquarium.daysSinceFed), unit: "days", symbol: "fish.fill")
+                    ReadingCard(title: "Hours Since Fed", value: String(aquarium.daysSinceFed), unit: "hr", symbol: "fish.fill")
                     ReadingCard(title: "Water Level", value: String(aquarium.waterLevel_isOk ? "OK" : "LOW"), unit: "", symbol: "water.waves.and.arrow.trianglehead.up")
                 }
                 .padding(.horizontal)
