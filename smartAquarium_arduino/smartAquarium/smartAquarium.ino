@@ -2,30 +2,27 @@
 #include <NimBLEDevice.h>
 #include <Adafruit_NeoPixel.h>
 #include "SmartAquarium.h"
-
 #define PIN 38  // pixels.
 #define NUMPIXELS 10
-
-
 
 // hardware pins.
 #define tdsPin 2            // cs
 #define warningLightPin 17  // dc
 #define waterLevelPin 11    // reset
-#define phSenPin 8          // SDA
-#define turbiditySenPin 18  // CLK
-
-
 #define lastFedButton 21    // a
 #define pumpPin 15          // b
 #define tempSenPin 16       // c
+
+
+#define phSenPin 8          // SDA
+#define turbiditySenPin 18  // CLK
 
 
 
 
 // void SmartAquarium::begin(int pumpPin, int tdsPin, int tempSenPin, int waterLevelPin, int phSenPin, int turSenPin, int warningLightPin, int lastFedButton)
 
-// todo:: make it where its not needed to connect to internet for it to start the ble. it shouldnt force connect screen even if no internent connection., 
+// todo:: make it where its not needed to connect to internet for it to start the ble. it shouldnt force connect screen even if no internent connection.,
 // TODO: read temp
 // TODO
 
@@ -254,8 +251,18 @@ void setup() {
 
   pingApp();
 
-  // aquarium.linkDeviceSuccess("HOKTA0"); // klklkl sense currently linked.
-  // delay(5000);
+
+
+  // bool success = aquarium.linkDeviceSuccess("ZJ0BX5");  // klklkl sense currently linked.
+
+  // while (success) {
+  //   digitalWrite(warningLightPin, HIGH);
+  //   delay(500);
+  //   digitalWrite(warningLightPin, LOW);
+  //   delay(500);
+  // }
+
+  // digitalWrite(warningLightPin, HIGH);
 }
 
 
@@ -335,7 +342,12 @@ void managePixels() {
 
 void loop() {
 
- 
+  // aquarium.sendReadingsToWebsite();
+  //   delay(30000);
+
+
+
+
   managePixels();
   aquarium.update();  // for now randomly changes the reading, later make it actually read sensors.
 

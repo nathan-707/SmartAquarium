@@ -82,6 +82,8 @@ public:
   bool fedButtonPressed = false;
 
   bool hasSystemAlert();
+  void sendReadingsToWebsite();
+
 
 private:
   unsigned long _lastBlinkTime;
@@ -90,7 +92,6 @@ private:
   const unsigned long ONE_HOUR = 3600000;  // 60 min * 60 sec * 1000 ms
   Preferences preferences;                 // Create Preferences object
   String device_token;
-  void sendReadingsToWebsite();
   const unsigned long websiteUpdateInterval = 900000;  // 15 mins.
   unsigned long lastWebsiteUpdate = websiteUpdateInterval;
   bool tempIsOk();

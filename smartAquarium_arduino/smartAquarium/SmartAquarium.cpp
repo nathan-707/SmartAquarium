@@ -463,15 +463,20 @@ void SmartAquarium::readSensors() {
   static unsigned long lastReadTime = 0;
   static bool poweredUp = true;
 
-  if (millis() - lastReadTime > 2000 || poweredUp) {  // update app every 2 seconds
+  if (millis() - lastReadTime > 5000 || poweredUp) {  // update app every 5 seconds
     lastReadTime = millis();
     poweredUp = false;
 
-    // placeholder logic for other sensors
+
+
+    // todo: read actual sensors here. /////////
     readings.turbidity = 1;
     readings.pH = 1;
+    // end of todo ////////////////////
 
-    // Read temp first, then use it to calculate TDS
+
+
+
     readTemperature();
     readings.tds_level = readTDS();
 
@@ -483,6 +488,7 @@ void SmartAquarium::readSensors() {
 
     sendReadingUpdateToApp = true;
   }
+
 
   if (millis() - lastWebsiteUpdate > websiteUpdateInterval) {  // update website every 15 mins
     lastWebsiteUpdate = millis();
