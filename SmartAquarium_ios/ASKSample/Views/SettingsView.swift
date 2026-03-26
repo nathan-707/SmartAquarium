@@ -21,11 +21,40 @@ struct SettingsView: View {
 
     var body: some View {
         
-
-
         Form {
         
             Toggle("Bubbler", isOn: $aquarium.bubbler_isOn)
+            
+            Toggle("Lamp", isOn: $aquarium.lamp_isOn)
+                .onChange(of: aquarium.lamp_isOn) { oldValue, newValue in
+                    aquarium.updateAquariumSetting(
+                        command: "lamp",
+                        value: newValue ? "true" : "false"
+                    )
+                }
+
+            
+            VStack(alignment: .leading, spacing: 12) {
+                
+                Picker("colorpicker", selection: $selectedTile) {
+                    ForEach(ColorTiles) { tile in
+                        let color = Color(
+                            red: Double(tile.red),
+                            green: Double(tile.green),
+                            blue: Double(tile.blue)
+                        )
+                        Rectangle().frame(width: 50, height: 50)
+                            .foregroundColor(color)
+                            .padding(5)
+                            .tag(tile)
+                    }
+                }
+                .pickerStyle(.wheel)
+                
+            }
+            
+            
+            
             
             Stepper(value: $aquarium.temp_Warning_thres, in: 0...120, step: 1) {
                 HStack {
@@ -102,13 +131,6 @@ struct SettingsView: View {
                 )
             }
             
-            Toggle("Lamp", isOn: $aquarium.lamp_isOn)
-                .onChange(of: aquarium.lamp_isOn) { oldValue, newValue in
-                    aquarium.updateAquariumSetting(
-                        command: "lamp",
-                        value: newValue ? "true" : "false"
-                    )
-                }
             
             Section("On Time") {
                 DatePicker(
@@ -212,45 +234,50 @@ struct SettingsView: View {
                 }
             }
             
-            VStack(alignment: .leading, spacing: 12) {
-                
-                Picker("colorpicker", selection: $selectedTile) {
-                    ForEach(ColorTiles) { tile in
-                        let color = Color(
-                            red: Double(tile.red),
-                            green: Double(tile.green),
-                            blue: Double(tile.blue)
-                        )
-                        Rectangle().frame(width: 50, height: 50)
-                            .foregroundColor(color)
-                            .padding(5)
-                            .tag(tile)
-                    }
+     
+            
+            
+//            if showChangeWifi == false {
+//                Button {
+//                    showChangeWifi = true
+//                } label: {
+//                    Text("Change Wifi")
+//                }
+//                
+//            }
+//            
+//            if showChangeWifi {
+//                setupWifiView()
+//            }
+//            
+            
+            
+                if aquarium.status != .connected {
+                    
+                    setupWifiView()
+                        .preferredColorScheme(.dark)
+                    
+                } else {
+                    Text("Connected.").foregroundStyle(.green).bold()
                 }
-                .pickerStyle(.wheel)
+            
+            
+            
+            Button {
+                aquarium.updateAquariumSetting(
+                    command: "update",
+                    value: "1"
+                )
+            } label: {
+                Text("Get Latest Update").padding().bold()
+            }
+            
+            
                 
-            }
             
             
-            if showChangeWifi == false {
-                Button {
-                    showChangeWifi = true
-                } label: {
-                    Text("Change Wifi")
-                }
-                
-            }
+          
             
-            if showChangeWifi {
-                setupWifiView()
-            }
-            
-            
-            
-            
-            
-            
-        
          
 
         }

@@ -8,6 +8,11 @@
 #include <Preferences.h>
 #include <OneWire.h>            // Added for Temp Sensor
 #include <DallasTemperature.h>  // Added for Temp Sensor
+#include <HTTPUpdate.h>
+
+
+const int tempSensorOffset = 6; // temperature offset for sensor.
+
 
 enum class WifiStatus : int {
   connecting = 0,

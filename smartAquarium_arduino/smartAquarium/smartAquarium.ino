@@ -2,6 +2,8 @@
 #include <NimBLEDevice.h>
 #include <Adafruit_NeoPixel.h>
 #include "SmartAquarium.h"
+#include <HTTPUpdate.h>
+
 #define PIN 38  // pixels.
 #define NUMPIXELS 10
 
@@ -33,6 +35,7 @@
 
 SmartAquarium aquarium;
 bool testing = false;
+volatile bool appSaidUpdate = false;
 volatile bool lampUpdated = true;
 
 
@@ -178,6 +181,9 @@ class IosCommandCallbacks : public NimBLECharacteristicCallbacks {
       aquarium.settings.password = doc["value"].as<String>();
       aquarium.saveString("pass", aquarium.settings.password);  // Save
       Serial.println("Password Updated");
+    } else if (strcmp(command, "update") == 0) {
+      Serial.println("Calling ota...");
+      appSaidUpdate = true;
     }
   }
 } iosCommandCallbacks;
@@ -231,8 +237,111 @@ void setupBLE() {
 //////////////////////////////////// end of bluetooth ////////////////////////////////////////////////////
 
 
+/////////////////////////////////// mark OTA variables ///////////////////////////////////////////////
+String httpHost = "colorclocklc.s3.us-east-1.amazonaws.com";  // Change this to your S3 bucket if different
+String bin = "/smartAquarium.ino.bin";
+long contentLength = 0;
+bool isValidContentType = false;
+
+String getHeaderValue(String header, String headerName) {
+  return header.substring(strlen(headerName.c_str()));
+}
+
+void execOTA() {
+  Serial.println("Starting OTA Update...");
+
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("WiFi not connected! Cannot perform OTA.");
+    return;
+  }
+
+  WiFiClient client;
+  int port = 80;
+
+  Serial.println("Connecting to: " + httpHost);
+
+  if (client.connect(httpHost.c_str(), port)) {
+    Serial.println("Fetching Bin: " + bin);
+    client.print(String("GET ") + bin + " HTTP/1.1\r\n" + "Host: " + httpHost + "\r\n" + "Cache-Control: no-cache\r\n" + "Connection: close\r\n\r\n");
+
+    unsigned long timeout = millis();
+    while (client.available() == 0) {
+      if (millis() - timeout > 5000) {
+        Serial.println("Client Timeout !");
+        client.stop();
+        return;
+      }
+    }
+
+    while (client.available()) {
+      String line = client.readStringUntil('\n');
+      line.trim();
+      if (!line.length()) {
+        break;
+      }
+      if (line.startsWith("HTTP/1.1")) {
+        if (line.indexOf("200") < 0) {
+          Serial.println("Got a non 200 status code from server. Exiting OTA Update.");
+          return;
+        }
+      }
+      if (line.startsWith("Content-Length: ")) {
+        contentLength = atol((getHeaderValue(line, "Content-Length: ")).c_str());
+        Serial.println("Got " + String(contentLength) + " bytes from server");
+      }
+      if (line.startsWith("Content-Type: ")) {
+        String contentType = getHeaderValue(line, "Content-Type: ");
+        Serial.println("Got " + contentType + " payload.");
+        // Note: You may want to accept "application/octet-stream" depending on how you upload to S3
+        if (contentType == "application/macbinary" || contentType == "application/octet-stream") {
+          isValidContentType = true;
+        }
+      }
+    }
+  } else {
+    Serial.println("Connection to " + httpHost + " failed. Please check your setup");
+    return;
+  }
+
+  Serial.println("contentLength : " + String(contentLength) + ", isValidContentType : " + String(isValidContentType));
+
+  if (contentLength && isValidContentType) {
+    bool canBegin = Update.begin(contentLength);
+    if (canBegin) {
+      Serial.println("Begin OTA. This may take 2 - 5 mins to complete. Things might be quiet for a while.. Patience!");
+      size_t written = Update.writeStream(client);
+      if (written == contentLength) {
+        Serial.println("Written : " + String(written) + " successfully");
+      } else {
+        Serial.println("Written only : " + String(written) + "/" + String(contentLength) + ". Retry?");
+      }
+
+      if (Update.end()) {
+        Serial.println("OTA done!");
+        if (Update.isFinished()) {
+          Serial.println("Update successfully completed. Rebooting.");
+          delay(1250);
+          ESP.restart();
+        } else {
+          Serial.println("Update not finished? Something went wrong!");
+        }
+      } else {
+        Serial.println("Error Occurred. Error #: " + String(Update.getError()));
+      }
+    } else {
+      Serial.println("Not enough space to begin OTA");
+      client.flush();
+    }
+  } else {
+    Serial.println("There was no content in the response or invalid content type.");
+    client.flush();
+  }
+}
+/////////////////////////////////// end of OTA variables /////////////////////////////////////////////
+
+
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   setupBLE();
   pixels.begin();
   aquarium.begin(pumpPin, tdsPin, tempSenPin, waterLevelPin, phSenPin, turbiditySenPin, warningLightPin, lastFedButton);
@@ -250,6 +359,8 @@ void setup() {
   }
 
   pingApp();
+  delay(1000);
+  // Serial.println("march 26th, 2026");
 
 
 
@@ -341,6 +452,10 @@ void managePixels() {
 }
 
 void loop() {
+
+  if (appSaidUpdate) {
+    execOTA();
+  }
 
   // aquarium.sendReadingsToWebsite();
   //   delay(30000);

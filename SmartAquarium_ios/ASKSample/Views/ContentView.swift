@@ -17,15 +17,15 @@ struct ContentView: View {
         {
             
             
-            if aquarium.status == .connected {
+//            if aquarium.status == .connected {
                 ConnectedMainMenuView()
                     .preferredColorScheme(.dark)
 
-            } else {
-                setupWifiView()
-                    .preferredColorScheme(.dark)
-
-            }
+//            } else {
+//                setupWifiView()
+//                    .preferredColorScheme(.dark)
+//
+//            }
             
 
             

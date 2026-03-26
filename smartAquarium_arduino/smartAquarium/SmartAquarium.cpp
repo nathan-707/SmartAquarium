@@ -206,6 +206,8 @@ bool SmartAquarium::connectToInternetSuccessful() {
   }
 
   WiFi.begin(settings.ssid.c_str(), settings.password.c_str());
+  WiFi.setAutoReconnect(true);
+
   int retryCount = 0;
   while (WiFi.status() != WL_CONNECTED && retryCount < 20) {
     delay(500);
@@ -282,13 +284,13 @@ void SmartAquarium::updateTime() {
 
 void SmartAquarium::update() {
 
-  
+
   if (hasSystemAlert()) {
     if (readings.hoursSinceFed > settings.daysFed_Warning_thres) {
 
       if (millis() - _lastBlinkTime >= 300) {
-        _lastBlinkTime = millis();  
-        _lightState = !_lightState;      
+        _lastBlinkTime = millis();
+        _lightState = !_lightState;
         digitalWrite(_warningLightPin, _lightState);
       }
 
@@ -417,12 +419,15 @@ int SmartAquarium::getMedianNum(int bArray[], int iFilterLen) {
   return bTemp;
 }
 
+
+
 void SmartAquarium::readTemperature() {
   // Fetch the temperature that was calculating in the background
   float tempF = _tempSensor->getTempFByIndex(0);
 
   // The sensor returns -196.0F (-127C) if it gets disconnected or has a wiring error
   if (tempF > -100.0) {
+    tempF = tempF + tempSensorOffset;
     readings.water_temp = tempF;
     Serial.print("Water Temp: ");
     Serial.print(readings.water_temp);
